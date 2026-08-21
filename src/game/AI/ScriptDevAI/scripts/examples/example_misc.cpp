@@ -23,9 +23,6 @@ EndScriptData */
 
 #include "AI/ScriptDevAI/include/sc_common.h"
 
-extern void AddSC_npc_buffer();
-extern void AddSC_npc_level58_upgrade();
-
 enum
 {
     SAY_HI  = -1999925
@@ -67,7 +64,4 @@ void AddSC_example_misc()
     pNewScript->pGOUse = &GOUse_example_go_teleporter;
     pNewScript->RegisterSelf(false);
 
-    // Custom buffer NPC. Kept here so no core ScriptLoader changes are required.
-    AddSC_npc_buffer();
-    AddSC_npc_level58_upgrade();
 }
