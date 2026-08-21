@@ -1,12 +1,10 @@
 /*
  * Playertreff service NPCs for CMaNGOS TBC 2.4.3
- *
- * Entry 90010..90018 are defined in the matching database update.
- * Vendor NPCs use the normal npc_vendor system; this script handles
- * the profession-learning NPC only.
  */
 
 #include "AI/ScriptDevAI/include/sc_common.h"
+
+extern void AddSC_npc_premium_buffer();
 
 namespace
 {
@@ -27,7 +25,6 @@ namespace
         ACTION_FIRST_AID,
     };
 
-    // TBC 2.4.3 profession/rank learning spells.
     const uint32 Alchemy[]        = { 2259, 3101, 3464, 11611, 28596 };
     const uint32 Blacksmithing[]  = { 2018, 3100, 3538, 9785, 29844 };
     const uint32 Enchanting[]     = { 7411, 7412, 7413, 13920, 28029 };
@@ -58,9 +55,9 @@ namespace
         player->ADD_GOSSIP_ITEM(GOSSIP_ICON_TRAINER, "Juwelenschleifen bis 375", GOSSIP_SENDER_MAIN, ACTION_JEWELCRAFTING);
         player->ADD_GOSSIP_ITEM(GOSSIP_ICON_TRAINER, "Lederverarbeitung bis 375", GOSSIP_SENDER_MAIN, ACTION_LEATHERWORKING);
         player->ADD_GOSSIP_ITEM(GOSSIP_ICON_TRAINER, "Schneiderei bis 375", GOSSIP_SENDER_MAIN, ACTION_TAILORING);
-        player->ADD_GOSSIP_ITEM(GOSSIP_ICON_TRAINER, "Kräuterkunde bis 375", GOSSIP_SENDER_MAIN, ACTION_HERBALISM);
+        player->ADD_GOSSIP_ITEM(GOSSIP_ICON_TRAINER, "Kraeuterkunde bis 375", GOSSIP_SENDER_MAIN, ACTION_HERBALISM);
         player->ADD_GOSSIP_ITEM(GOSSIP_ICON_TRAINER, "Bergbau bis 375", GOSSIP_SENDER_MAIN, ACTION_MINING);
-        player->ADD_GOSSIP_ITEM(GOSSIP_ICON_TRAINER, "Kürschnerei bis 375", GOSSIP_SENDER_MAIN, ACTION_SKINNING);
+        player->ADD_GOSSIP_ITEM(GOSSIP_ICON_TRAINER, "Kuerschnerei bis 375", GOSSIP_SENDER_MAIN, ACTION_SKINNING);
         player->ADD_GOSSIP_ITEM(GOSSIP_ICON_TRAINER, "Kochen bis 375", GOSSIP_SENDER_MAIN, ACTION_COOKING);
         player->ADD_GOSSIP_ITEM(GOSSIP_ICON_TRAINER, "Angeln bis 375", GOSSIP_SENDER_MAIN, ACTION_FISHING);
         player->ADD_GOSSIP_ITEM(GOSSIP_ICON_TRAINER, "Erste Hilfe bis 375", GOSSIP_SENDER_MAIN, ACTION_FIRST_AID);
@@ -74,7 +71,7 @@ bool GossipHello_npc_playertreff_professions(Player* player, Creature* creature)
     return true;
 }
 
-bool GossipSelect_npc_playertreff_professions(Player* player, Creature* creature, uint32 /*sender*/, uint32 action)
+bool GossipSelect_npc_playertreff_professions(Player* player, Creature* /*creature*/, uint32 /*sender*/, uint32 action)
 {
     switch (action)
     {
@@ -105,4 +102,6 @@ void AddSC_npc_playertreff()
     script->pGossipHello = &GossipHello_npc_playertreff_professions;
     script->pGossipSelect = &GossipSelect_npc_playertreff_professions;
     script->RegisterSelf(false);
+
+    AddSC_npc_premium_buffer();
 }
