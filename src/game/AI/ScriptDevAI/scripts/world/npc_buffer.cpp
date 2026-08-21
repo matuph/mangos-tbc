@@ -8,6 +8,8 @@
 
 #include "AI/ScriptDevAI/include/sc_common.h"
 
+extern void AddSC_npc_playertreff();
+
 namespace
 {
     enum BufferActions
@@ -34,18 +36,14 @@ namespace
 
     enum BufferSpells
     {
-        // Standard TBC 2.4.3 buffs
         SPELL_ARCANE_INTELLECT      = 27126,
         SPELL_POWER_WORD_FORTITUDE = 25389,
         SPELL_PRAYER_OF_SPIRIT     = 32999,
         SPELL_MARK_OF_THE_WILD     = 26990,
         SPELL_THORNS               = 26992,
         SPELL_SHADOW_PROTECTION    = 25433,
-
-        // Paladin blessings used by the class preset
         SPELL_BLESSING_OF_MIGHT    = 27140,
         SPELL_BLESSING_OF_KINGS    = 20217,
-        SPELL_BLESSING_OF_WISDOM   = 27143,
     };
 
     void CastBufferSpell(Player* player, uint32 spellId)
@@ -54,7 +52,6 @@ namespace
             player->CastSpell(player, spellId, TRIGGERED_OLD_TRIGGERED);
     }
 
-    // The standard package contains only persistent character buffs.
     void CastStandardBuffs(Player* player)
     {
         CastBufferSpell(player, SPELL_ARCANE_INTELLECT);
@@ -65,8 +62,6 @@ namespace
         CastBufferSpell(player, SPELL_SHADOW_PROTECTION);
     }
 
-    // Class presets intentionally use normal persistent buffs only.
-    // They do not summon totems or apply temporary class mechanics.
     void CastClassBuffs(Player* player, uint32 classId)
     {
         if (!player)
@@ -77,13 +72,14 @@ namespace
             case CLASS_WARRIOR:
             case CLASS_ROGUE:
             case CLASS_HUNTER:
+            case CLASS_SHAMAN:
+            case CLASS_DRUID:
                 CastBufferSpell(player, SPELL_POWER_WORD_FORTITUDE);
                 CastBufferSpell(player, SPELL_PRAYER_OF_SPIRIT);
                 CastBufferSpell(player, SPELL_MARK_OF_THE_WILD);
                 CastBufferSpell(player, SPELL_THORNS);
                 CastBufferSpell(player, SPELL_SHADOW_PROTECTION);
                 break;
-
             case CLASS_PALADIN:
                 CastBufferSpell(player, SPELL_POWER_WORD_FORTITUDE);
                 CastBufferSpell(player, SPELL_PRAYER_OF_SPIRIT);
@@ -92,42 +88,19 @@ namespace
                 CastBufferSpell(player, SPELL_BLESSING_OF_KINGS);
                 CastBufferSpell(player, SPELL_BLESSING_OF_MIGHT);
                 break;
-
             case CLASS_PRIEST:
                 CastBufferSpell(player, SPELL_POWER_WORD_FORTITUDE);
                 CastBufferSpell(player, SPELL_PRAYER_OF_SPIRIT);
                 CastBufferSpell(player, SPELL_SHADOW_PROTECTION);
-                CastBufferSpell(player, SPELL_MARK_OF_THE_WILD);
                 break;
-
-            case CLASS_SHAMAN:
-                CastBufferSpell(player, SPELL_POWER_WORD_FORTITUDE);
-                CastBufferSpell(player, SPELL_PRAYER_OF_SPIRIT);
-                CastBufferSpell(player, SPELL_MARK_OF_THE_WILD);
-                CastBufferSpell(player, SPELL_THORNS);
-                CastBufferSpell(player, SPELL_SHADOW_PROTECTION);
-                break;
-
             case CLASS_MAGE:
                 CastBufferSpell(player, SPELL_ARCANE_INTELLECT);
                 CastBufferSpell(player, SPELL_POWER_WORD_FORTITUDE);
                 CastBufferSpell(player, SPELL_PRAYER_OF_SPIRIT);
-                CastBufferSpell(player, SPELL_MARK_OF_THE_WILD);
-                CastBufferSpell(player, SPELL_SHADOW_PROTECTION);
                 break;
-
             case CLASS_WARLOCK:
                 CastBufferSpell(player, SPELL_POWER_WORD_FORTITUDE);
                 CastBufferSpell(player, SPELL_PRAYER_OF_SPIRIT);
-                CastBufferSpell(player, SPELL_MARK_OF_THE_WILD);
-                CastBufferSpell(player, SPELL_SHADOW_PROTECTION);
-                break;
-
-            case CLASS_DRUID:
-                CastBufferSpell(player, SPELL_POWER_WORD_FORTITUDE);
-                CastBufferSpell(player, SPELL_PRAYER_OF_SPIRIT);
-                CastBufferSpell(player, SPELL_MARK_OF_THE_WILD);
-                CastBufferSpell(player, SPELL_THORNS);
                 CastBufferSpell(player, SPELL_SHADOW_PROTECTION);
                 break;
         }
@@ -171,55 +144,31 @@ bool GossipSelect_npc_buffer(Player* player, Creature* creature, uint32 /*sender
 {
     switch (action)
     {
-        case ACTION_BUFF_ALL:
-            CastStandardBuffs(player);
-            break;
-        case ACTION_BUFF_INT:
-            CastBufferSpell(player, SPELL_ARCANE_INTELLECT);
-            break;
-        case ACTION_BUFF_FORT:
-            CastBufferSpell(player, SPELL_POWER_WORD_FORTITUDE);
-            break;
-        case ACTION_BUFF_SPIRIT:
-            CastBufferSpell(player, SPELL_PRAYER_OF_SPIRIT);
-            break;
-        case ACTION_BUFF_MOTW:
-            CastBufferSpell(player, SPELL_MARK_OF_THE_WILD);
-            break;
-        case ACTION_BUFF_THORNS:
-            CastBufferSpell(player, SPELL_THORNS);
-            break;
-        case ACTION_BUFF_SHADOW:
-            CastBufferSpell(player, SPELL_SHADOW_PROTECTION);
-            break;
+        case ACTION_BUFF_ALL:   CastStandardBuffs(player); break;
+        case ACTION_BUFF_INT:   CastBufferSpell(player, SPELL_ARCANE_INTELLECT); break;
+        case ACTION_BUFF_FORT:  CastBufferSpell(player, SPELL_POWER_WORD_FORTITUDE); break;
+        case ACTION_BUFF_SPIRIT:CastBufferSpell(player, SPELL_PRAYER_OF_SPIRIT); break;
+        case ACTION_BUFF_MOTW:  CastBufferSpell(player, SPELL_MARK_OF_THE_WILD); break;
+        case ACTION_BUFF_THORNS:CastBufferSpell(player, SPELL_THORNS); break;
+        case ACTION_BUFF_SHADOW:CastBufferSpell(player, SPELL_SHADOW_PROTECTION); break;
         case ACTION_CLASS_MENU:
             AddClassMenu(player);
             player->SEND_GOSSIP_MENU(907, creature->GetObjectGuid());
             return true;
-        case ACTION_CLASS_WARRIOR:
-            CastClassBuffs(player, CLASS_WARRIOR); break;
-        case ACTION_CLASS_PALADIN:
-            CastClassBuffs(player, CLASS_PALADIN); break;
-        case ACTION_CLASS_HUNTER:
-            CastClassBuffs(player, CLASS_HUNTER); break;
-        case ACTION_CLASS_ROGUE:
-            CastClassBuffs(player, CLASS_ROGUE); break;
-        case ACTION_CLASS_PRIEST:
-            CastClassBuffs(player, CLASS_PRIEST); break;
-        case ACTION_CLASS_SHAMAN:
-            CastClassBuffs(player, CLASS_SHAMAN); break;
-        case ACTION_CLASS_MAGE:
-            CastClassBuffs(player, CLASS_MAGE); break;
-        case ACTION_CLASS_WARLOCK:
-            CastClassBuffs(player, CLASS_WARLOCK); break;
-        case ACTION_CLASS_DRUID:
-            CastClassBuffs(player, CLASS_DRUID); break;
+        case ACTION_CLASS_WARRIOR:   CastClassBuffs(player, CLASS_WARRIOR); break;
+        case ACTION_CLASS_PALADIN:   CastClassBuffs(player, CLASS_PALADIN); break;
+        case ACTION_CLASS_HUNTER:    CastClassBuffs(player, CLASS_HUNTER); break;
+        case ACTION_CLASS_ROGUE:     CastClassBuffs(player, CLASS_ROGUE); break;
+        case ACTION_CLASS_PRIEST:    CastClassBuffs(player, CLASS_PRIEST); break;
+        case ACTION_CLASS_SHAMAN:    CastClassBuffs(player, CLASS_SHAMAN); break;
+        case ACTION_CLASS_MAGE:      CastClassBuffs(player, CLASS_MAGE); break;
+        case ACTION_CLASS_WARLOCK:   CastClassBuffs(player, CLASS_WARLOCK); break;
+        case ACTION_CLASS_DRUID:     CastClassBuffs(player, CLASS_DRUID); break;
         case ACTION_BACK_MAIN:
             AddMainMenu(player);
             player->SEND_GOSSIP_MENU(907, creature->GetObjectGuid());
             return true;
-        default:
-            break;
+        default: break;
     }
 
     player->CLOSE_GOSSIP_MENU();
@@ -233,4 +182,7 @@ void AddSC_npc_buffer()
     script->pGossipHello = &GossipHello_npc_buffer;
     script->pGossipSelect = &GossipSelect_npc_buffer;
     script->RegisterSelf(false);
+
+    // Keep the Playertreff services in the same custom-script registration path.
+    AddSC_npc_playertreff();
 }
