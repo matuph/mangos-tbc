@@ -6,9 +6,6 @@
 -- Runtime logic is handled by lua_scripts/npc_level58_upgrade.lua.
 -- ============================================================================
 
--- ---------------------------------------------------------------------------
--- NPC configuration
--- ---------------------------------------------------------------------------
 DELETE FROM creature_template WHERE entry = 90005;
 
 INSERT INTO creature_template
@@ -23,15 +20,12 @@ VALUES
      1.0, 1.14286, 1.0, 0, 0, 7, 0,
      0, '');
 
--- ---------------------------------------------------------------------------
--- Service configuration
--- ---------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS custom_level58_upgrade_config
 (
     npc_entry       INT UNSIGNED NOT NULL,
     required_level  TINYINT UNSIGNED NOT NULL,
     target_level    TINYINT UNSIGNED NOT NULL,
-    cost_copper     BIGINT UNSIGNED NOT NULL,
+    cost_copper     INT UNSIGNED NOT NULL,
     gossip_text     VARCHAR(255) NOT NULL,
     confirm_text    VARCHAR(255) NOT NULL,
     success_text    VARCHAR(255) NOT NULL,
@@ -56,12 +50,6 @@ VALUES
      'Du benoetigst 500 Gold fuer das Charakter-Upgrade.',
      'Dein Inventar hat nicht genug Platz fuer das vollstaendige Dungeon-Set. Es wurde nichts berechnet.');
 
--- ---------------------------------------------------------------------------
--- Class -> Dungeon Set 1 mapping
--- WoW TBC class IDs:
---   1 Warrior, 2 Paladin, 3 Hunter, 4 Rogue, 5 Priest,
---   7 Shaman, 8 Mage, 9 Warlock, 11 Druid
--- ---------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS custom_level58_upgrade_items
 (
     npc_entry   INT UNSIGNED NOT NULL,
