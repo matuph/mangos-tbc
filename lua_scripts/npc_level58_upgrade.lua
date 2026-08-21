@@ -41,7 +41,7 @@ local function LoadConfiguration()
     Config = {
         requiredLevel = config:GetUInt32(0),
         targetLevel = config:GetUInt32(1),
-        cost = config:GetUInt64(2),
+        cost = config:GetUInt32(2),
         gossipText = config:GetString(3),
         confirmText = config:GetString(4),
         successText = config:GetString(5),
