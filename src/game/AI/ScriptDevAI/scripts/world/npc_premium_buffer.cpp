@@ -18,18 +18,19 @@ namespace
 
     enum Spells
     {
-        SPELL_ARCANE_INTELLECT      = 27126,
-        SPELL_POWER_WORD_FORTITUDE = 25389,
-        SPELL_PRAYER_OF_SPIRIT     = 32999,
-        SPELL_MARK_OF_THE_WILD     = 26990,
-        SPELL_THORNS               = 26992,
-        SPELL_SHADOW_PROTECTION    = 25433,
-        SPELL_BLESSING_OF_MIGHT    = 27140,
-        SPELL_BLESSING_OF_KINGS    = 20217,
+        SPELL_ARCANE_INTELLECT       = 27126,
+        SPELL_POWER_WORD_FORTITUDE  = 25389,
+        SPELL_PRAYER_OF_SPIRIT      = 32999,
+        SPELL_MARK_OF_THE_WILD      = 26990,
+        SPELL_THORNS                = 26992,
+        SPELL_SHADOW_PROTECTION     = 25433,
+        SPELL_BLESSING_OF_MIGHT     = 27140,
+        SPELL_BLESSING_OF_KINGS     = 20217,
         SPELL_RESURRECTION_SICKNESS = 15007,
     };
 
-    static const uint32 PREMIUM_COST = 5 * GOLD;
+    // WoW money is stored in copper: 5 gold = 50,000 copper.
+    static const uint32 PREMIUM_COST = 50000;
 
     void Buff(Player* player, uint32 spellId)
     {
@@ -104,7 +105,7 @@ bool GossipHello_npc_premium_buffer(Player* player, Creature* creature)
     return true;
 }
 
-bool GossipSelect_npc_premium_buffer(Player* player, Creature* creature, uint32 /*sender*/, uint32 action)
+bool GossipSelect_npc_premium_buffer(Player* player, Creature* /*creature*/, uint32 /*sender*/, uint32 action)
 {
     switch (action)
     {
@@ -115,11 +116,10 @@ bool GossipSelect_npc_premium_buffer(Player* player, Creature* creature, uint32 
                 return true;
             }
 
-            // Charge exactly 5 gold before applying the premium package.
             player->ModifyMoney(-int32(PREMIUM_COST));
             StandardBuffs(player);
             ClassBuff(player);
-            // Remove the standard TBC resurrection sickness aura.
+            // TBC Resurrection Sickness.
             player->RemoveAurasDueToSpell(SPELL_RESURRECTION_SICKNESS);
             player->CLOSE_GOSSIP_MENU();
             return true;
