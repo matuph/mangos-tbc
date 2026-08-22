@@ -1,0 +1,8 @@
+set(LIBRARY_NAME playertreff)
+file(GLOB module_sources src/*.cpp src/*.h)
+add_library(${LIBRARY_NAME} STATIC ${module_sources})
+target_include_directories(${LIBRARY_NAME} PRIVATE ${CMAKE_SOURCE_DIR}/src/modules/modules/src)
+target_link_libraries(${LIBRARY_NAME} modules shared RecastNavigation::Detour)
+target_compile_definitions(${LIBRARY_NAME} PRIVATE ENABLE_MODULES EXPANSION=1)
+set_target_properties(${LIBRARY_NAME} PROPERTIES PROJECT_LABEL "Playertreff" FOLDER "Modules")
+install(DIRECTORY src/lua_scripts/ DESTINATION ${CMAKE_INSTALL_PREFIX}/lua_scripts FILES_MATCHING PATTERN "*.lua")

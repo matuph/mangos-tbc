@@ -96,4 +96,4 @@ cmake_install.cmake
 #
 # Module files
 #
-src/modules/
+# Flekz modules are vendored so builds are reproducible and custom modules are tracked.

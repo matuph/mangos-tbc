@@ -1,0 +1,9 @@
+{
+  "name": "playertreff",
+  "version": "1.0.0",
+  "core": "cmangos-tbc",
+  "moduleSystem": "flekz-games/cmangos-modules",
+  "buildFlag": "BUILD_MODULE_PLAYERTREFF",
+  "runtime": ["world-sql", "eluna"],
+  "dependencies": ["modules", "eluna"]
+}

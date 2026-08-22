@@ -1,0 +1,9 @@
+{
+  "name": "level58upgrade",
+  "version": "1.0.0",
+  "core": "cmangos-tbc",
+  "moduleSystem": "flekz-games/cmangos-modules",
+  "buildFlag": "BUILD_MODULE_LEVEL58UPGRADE",
+  "runtime": ["world-sql", "eluna"],
+  "dependencies": ["modules", "eluna"]
+}
