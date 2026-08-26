@@ -1,0 +1,104 @@
+name: Linux compiler test
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - feature/playertreff
+  pull_request:
+    branches:
+      - master
+
+permissions:
+  contents: read
+
+env:
+  CMAKE_BUILD_PARALLEL_LEVEL: "2"
+
+jobs:
+  ubuntu-compiler-test:
+    name: Ubuntu 24.04
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v6
+
+      - name: Install compiler dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            build-essential cmake git pkg-config ca-certificates \
+            libace-dev libboost-all-dev libssl-dev \
+            default-libmysqlclient-dev libreadline-dev libtbb-dev \
+            libicu-dev zlib1g-dev libbz2-dev libsqlite3-dev
+
+      - name: Configure CMaNGOS TBC
+        run: |
+          cmake -S . -B build-ci \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_INSTALL_PREFIX="$RUNNER_TEMP/cmangos-tbc" \
+            -DBUILD_EXTRACTORS=OFF \
+            -DPCH=ON \
+            -DDEBUG=OFF \
+            -DBUILD_AHBOT=ON \
+            -DBUILD_PLAYERBOTS=OFF \
+            -DBUILD_GIT_ID=ON \
+            -DBUILD_MODULES=ON \
+            -DBUILD_MODULE_PLAYERTREFF=ON \
+            -DBUILD_MODULE_LEVEL58UPGRADE=ON \
+            -DBUILD_MODULE_HARDCORE=ON \
+            -DBUILD_MODULE_TRAININGDUMMIES=ON
+
+      - name: Compile
+        run: cmake --build build-ci --parallel 2
+
+      - name: Test installation
+        run: cmake --install build-ci
+
+  debian-compiler-test:
+    name: Debian 13
+    runs-on: ubuntu-24.04
+    container:
+      image: debian:13
+    defaults:
+      run:
+        shell: bash
+    timeout-minutes: 90
+
+    steps:
+      - name: Prepare Debian container
+        run: |
+          apt-get update
+          apt-get install -y --no-install-recommends \
+            build-essential cmake git pkg-config ca-certificates \
+            libace-dev libboost-all-dev libssl-dev \
+            default-libmysqlclient-dev libreadline-dev libtbb-dev \
+            libicu-dev zlib1g-dev libbz2-dev libsqlite3-dev
+
+      - name: Checkout source
+        uses: actions/checkout@v6
+
+      - name: Configure CMaNGOS TBC
+        run: |
+          cmake -S . -B build-ci \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_INSTALL_PREFIX="$RUNNER_TEMP/cmangos-tbc" \
+            -DBUILD_EXTRACTORS=OFF \
+            -DPCH=ON \
+            -DDEBUG=OFF \
+            -DBUILD_AHBOT=ON \
+            -DBUILD_PLAYERBOTS=OFF \
+            -DBUILD_GIT_ID=ON \
+            -DBUILD_MODULES=ON \
+            -DBUILD_MODULE_PLAYERTREFF=ON \
+            -DBUILD_MODULE_LEVEL58UPGRADE=ON \
+            -DBUILD_MODULE_HARDCORE=ON \
+            -DBUILD_MODULE_TRAININGDUMMIES=ON
+
+      - name: Compile
+        run: cmake --build build-ci --parallel 2
+
+      - name: Test installation
+        run: cmake --install build-ci
