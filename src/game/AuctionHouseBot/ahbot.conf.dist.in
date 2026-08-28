@@ -3,7 +3,7 @@
 ################################################
 
 [AhbotConf]
-ConfVersion=2021011201
+ConfVersion=2026082801
 
 ###################################################################################################################
 # Probability in percent of AHBot selling/buying items at the AH.
@@ -16,6 +16,27 @@ ConfVersion=2021011201
 ###################################################################################################################
 AuctionHouseBot.Chance.Sell = 10
 AuctionHouseBot.Chance.Buy  = 10
+
+###################################################################################################################
+# Small-server stock control (values apply separately to Alliance, Horde and neutral auction houses).
+# Below Min, AHBot refills every visit. At Max, it stops creating auctions. BatchSize limits database load.
+###################################################################################################################
+AuctionHouseBot.Stock.Min       = 300
+AuctionHouseBot.Stock.Max       = 600
+AuctionHouseBot.Stock.BatchSize = 25
+
+###################################################################################################################
+# Random stack size range as percentage of the item's normal maximum stack size.
+###################################################################################################################
+AuctionHouseBot.Stack.MinPercent = 20
+AuctionHouseBot.Stack.MaxPercent = 100
+
+###################################################################################################################
+# Safe item filters. MaxQuality: 0 poor, 1 normal, 2 uncommon, 3 rare, 4 epic, 5 legendary, 6 artifact.
+###################################################################################################################
+AuctionHouseBot.Filter.MaxQuality           = 4
+AuctionHouseBot.Filter.ExcludeQuestItems    = 1
+AuctionHouseBot.Filter.ExcludeConjuredItems = 1
 
 ###################################################################################################################
 # AuctionHouseBot.Loot.<source>[.<rank>] = <minSources>,<maxSources>,<minLootings>,<maxLootings>
@@ -77,7 +98,7 @@ AuctionHouseBot.Items.Profession = 80, 90, 0, 50
 # If disabled, the bot will use the static value below (AuctionHouseBot.Level.MaxRequired).
 # Value must be 0 (disabled) or 1 (enabled). Default: 0
 ###################################################################################################################
-AuctionHouseBot.Level.DynamicMaxRequired = 0
+AuctionHouseBot.Level.DynamicMaxRequired = 1
 
 ###################################################################################################################
 # Ignore GM accounts when determining dynamic max required level
@@ -88,7 +109,7 @@ AuctionHouseBot.Level.DynamicMaxRequired = 0
 # If no characters are online at all, the static value below will be used.
 # Value must be 0 (disabled) or 1 (enabled). Default: 0
 ###################################################################################################################
-AuctionHouseBot.Level.IgnoreGmAccounts = 0
+AuctionHouseBot.Level.IgnoreGmAccounts = 1
 
 ###################################################################################################################
 # Interval in minutes to refresh the dynamic max required level
@@ -107,7 +128,7 @@ AuctionHouseBot.Level.DynamicRefreshInterval = 10
 # - No characters are online to determine a dynamic value
 # Value must be between 1 and 255. Default: 60
 ###################################################################################################################
-AuctionHouseBot.Level.MaxRequired = 60
+AuctionHouseBot.Level.MaxRequired = 70
 
 ###################################################################################################################
 # Item value
@@ -195,4 +216,12 @@ AuctionHouseBot.Time.Max = 24
 # Setting this lower than 100 also means that the AHBot is less likely to outbid players.
 # Value must be in range 0-200. Default value is 80.
 ###################################################################################################################
-AuctionHouseBot.Buy.Value = 80
+AuctionHouseBot.Buy.Value = 65
+
+###################################################################################################################
+# Buying safety for a small-server economy.
+# NeverBuyBotAuctions prevents the bot from bidding against players on its own stock.
+# MaxPriceGold limits a single buyout. Set MaxPriceGold to 0 for no limit.
+###################################################################################################################
+AuctionHouseBot.Buy.NeverBuyBotAuctions = 1
+AuctionHouseBot.Buy.MaxPriceGold         = 5000

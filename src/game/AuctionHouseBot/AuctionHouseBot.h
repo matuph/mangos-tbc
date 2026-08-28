@@ -69,6 +69,8 @@ class AuctionHouseBot
         void ParseItemValueConfig(char const* fieldname, std::vector<uint32>& itemValues);
         void AddLootToItemMap(LootStore* store, std::vector<int32>& lootConfig, std::vector<uint32>& lootTemplates, std::unordered_map<uint32, uint32>& itemMap);
         uint32 CalculateBuyoutPrice(ItemPrototype const* prototype);
+        uint32 CountBotAuctions(AuctionHouseObject const* auctionHouse) const;
+        bool IsAllowedToSell(ItemPrototype const* prototype) const;
         uint32 ValueWithVariance(uint32 itemValue) { return (uint32) (itemValue + ((int32) urand(0, m_valueVariance * 2 + 1) - (int32) m_valueVariance) * (int32) (itemValue / 100)); };
 
         std::string m_configFileName;
@@ -94,6 +96,7 @@ class AuctionHouseBot
 	bool m_ignoreGm;
 	uint32 m_lastLevelUpdateTime = 0;
 	uint32 m_levelRefreshInterval = 0;
+        uint32 m_staticMaxRequiredLevel;
 	uint32 m_maxRequiredLevel;
 	uint32 m_maxItemLevel;
 
@@ -105,6 +108,16 @@ class AuctionHouseBot
         uint32 m_auctionTimeMin;
         uint32 m_auctionTimeMax;
         uint32 m_buyValue;
+        uint32 m_stockMin;
+        uint32 m_stockMax;
+        uint32 m_stockBatchSize;
+        uint32 m_stackMinPercent;
+        uint32 m_stackMaxPercent;
+        uint32 m_maxQuality;
+        uint32 m_buyMaxPrice;
+        bool m_excludeQuestItems;
+        bool m_excludeConjuredItems;
+        bool m_neverBuyBotAuctions;
 
         std::vector<uint32> m_creatureLootNormalTemplates;
         std::vector<uint32> m_creatureLootRareTemplates;

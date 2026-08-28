@@ -28,7 +28,7 @@
 
 // Format is YYYYMMDDRR where RR is the change in the conf file
 // for that day.
-#define AUCTIONHOUSEBOT_CONF_VERSION    2021011201
+#define AUCTIONHOUSEBOT_CONF_VERSION    2026082801
 
 INSTANTIATE_SINGLETON_1(AuctionHouseBot);
 
@@ -54,6 +54,30 @@ void AuctionHouseBot::Initialize()
 
     m_chanceSell = GetMinMaxConfig("AuctionHouseBot.Chance.Sell", 0, 100, 10);
     m_chanceBuy = GetMinMaxConfig("AuctionHouseBot.Chance.Buy", 0, 100, 10);
+
+    m_stockMin = GetMinMaxConfig("AuctionHouseBot.Stock.Min", 0, 100000, 300);
+    m_stockMax = GetMinMaxConfig("AuctionHouseBot.Stock.Max", 1, 100000, 600);
+    m_stockBatchSize = GetMinMaxConfig("AuctionHouseBot.Stock.BatchSize", 1, 1000, 25);
+    if (m_stockMin > m_stockMax)
+    {
+        sLog.outError("AHBot error: AuctionHouseBot.Stock.Min must be less than or equal to Stock.Max. Setting Stock.Min equal to Stock.Max.");
+        m_stockMin = m_stockMax;
+    }
+
+    m_stackMinPercent = GetMinMaxConfig("AuctionHouseBot.Stack.MinPercent", 1, 100, 20);
+    m_stackMaxPercent = GetMinMaxConfig("AuctionHouseBot.Stack.MaxPercent", 1, 100, 100);
+    if (m_stackMinPercent > m_stackMaxPercent)
+    {
+        sLog.outError("AHBot error: AuctionHouseBot.Stack.MinPercent must be less than or equal to Stack.MaxPercent. Setting Stack.MinPercent equal to Stack.MaxPercent.");
+        m_stackMinPercent = m_stackMaxPercent;
+    }
+
+    m_maxQuality = GetMinMaxConfig("AuctionHouseBot.Filter.MaxQuality", 0, MAX_ITEM_QUALITY - 1, ITEM_QUALITY_EPIC);
+    m_excludeQuestItems = m_ahBotCfg.GetBoolDefault("AuctionHouseBot.Filter.ExcludeQuestItems", true);
+    m_excludeConjuredItems = m_ahBotCfg.GetBoolDefault("AuctionHouseBot.Filter.ExcludeConjuredItems", true);
+    m_neverBuyBotAuctions = m_ahBotCfg.GetBoolDefault("AuctionHouseBot.Buy.NeverBuyBotAuctions", true);
+    uint32 maxBuyPriceGold = GetMinMaxConfig("AuctionHouseBot.Buy.MaxPriceGold", 0, 429496, 5000);
+    m_buyMaxPrice = maxBuyPriceGold > UINT32_MAX / GOLD ? UINT32_MAX : maxBuyPriceGold * GOLD;
 
     sLog.outString("AHBot selling items: %s", m_chanceSell > 0 ? "Enabled" : "Disabled");
     sLog.outString("AHBot buying items: %s", m_chanceBuy > 0 ? "Enabled" : "Disabled");
@@ -137,6 +161,7 @@ void AuctionHouseBot::Initialize()
         m_buyValue = GetMinMaxConfig("AuctionHouseBot.Buy.Value", 0, 200, 90);
 
         // overridden items
+        m_itemData.clear();
         auto queryResult = CharacterDatabase.PQuery("SELECT item, value, add_chance, min_amount, max_amount FROM ahbot_items");
         if (queryResult)
         {
@@ -163,7 +188,9 @@ void AuctionHouseBot::Update()
 
     AuctionHouseType houseType = AuctionHouseType(m_houseAction % MAX_AUCTION_HOUSE_TYPE);
     AuctionHouseObject* auctionHouse = sAuctionMgr.GetAuctionsMap(houseType);
-    if (m_houseAction < MAX_AUCTION_HOUSE_TYPE && urand(0, 99) < m_chanceSell)
+    uint32 botAuctionCount = CountBotAuctions(auctionHouse);
+    bool shouldSell = botAuctionCount < m_stockMin || (botAuctionCount < m_stockMax && urand(0, 99) < m_chanceSell);
+    if (m_houseAction < MAX_AUCTION_HOUSE_TYPE && shouldSell)
     {
 	// Lazy-refresh dynamic level
 	if (m_useDynamicMaxLevel)
@@ -221,36 +248,45 @@ void AuctionHouseBot::Update()
                 itemMap[itemData.first] = urand(0, 99) < itemData.second.AddChance ? urand(itemData.second.MinAmount, itemData.second.MaxAmount) : 0;
         }
 
+        uint32 auctionsAdded = 0;
+        uint32 auctionsToAdd = std::min(m_stockBatchSize, m_stockMax - botAuctionCount);
         for (auto& itemEntry : itemMap)
         {
             ItemPrototype const* prototype = ObjectMgr::GetItemPrototype(itemEntry.first);
             if (!prototype || prototype->GetMaxStackSize() == 0)
                 continue; // really shouldn't happen, but better safe than sorry
+            if (!IsAllowedToSell(prototype))
+                continue;
             auto iterator = m_itemData.find(prototype->ItemId);
             if (iterator != m_itemData.end() && iterator->second.Value == 0)
                 continue; // item is blacklisted
             if (iterator == m_itemData.end() || iterator->second.AddChance == 0)
             {
-                if (prototype->Bonding == BIND_WHEN_PICKED_UP || prototype->Bonding == BIND_QUEST_ITEM)
-                    continue; // no BoP and quest items
-                if (prototype->Flags & ITEM_FLAG_HAS_LOOT)
-                    continue; // nor items containing loot
                 if (m_itemValue[prototype->Quality][prototype->Class] == 0)
                     continue; // item class is filtered out
             }
 
             uint32 itemValue = ValueWithVariance(iterator != m_itemData.end() ? iterator->second.Value : CalculateBuyoutPrice(prototype));
-            for (uint32 stackCounter = 0; stackCounter < itemEntry.second; stackCounter += prototype->GetMaxStackSize())
+            uint32 remaining = itemEntry.second;
+            while (remaining > 0 && auctionsAdded < auctionsToAdd)
             {
-                uint32 count = itemEntry.second - stackCounter > prototype->GetMaxStackSize() ? prototype->GetMaxStackSize() : itemEntry.second - stackCounter;
-                uint32 buyoutPrice = itemValue * count;
+                uint32 maxStack = prototype->GetMaxStackSize();
+                uint32 minConfiguredStack = std::max<uint32>(1, (maxStack * m_stackMinPercent + 99) / 100);
+                uint32 maxConfiguredStack = std::max<uint32>(minConfiguredStack, (maxStack * m_stackMaxPercent + 99) / 100);
+                uint32 count = std::min<uint32>(remaining, urand(minConfiguredStack, maxConfiguredStack));
+                uint32 buyoutPrice = itemValue > UINT32_MAX / count ? UINT32_MAX : itemValue * count;
                 Item* item = Item::CreateItem(itemEntry.first, count);
                 if (buyoutPrice == 0 || !item)
-                    continue; // don't put up items we don't know the value of
+                    break; // don't put up items we don't know the value of
                 uint32 bidPrice = buyoutPrice * (urand(m_auctionBidMin, m_auctionBidMax)) / 100;
                 if (item)
                     auctionHouse->AddAuction(sAuctionHouseStore.LookupEntry(houseType == AUCTION_HOUSE_ALLIANCE ? 1 : (houseType == AUCTION_HOUSE_HORDE ? 6 : 7)), item, urand(m_auctionTimeMin, m_auctionTimeMax) * HOUR, bidPrice, buyoutPrice);
+                remaining -= count;
+                ++auctionsAdded;
             }
+
+            if (auctionsAdded >= auctionsToAdd)
+                break;
         }
     } else if (m_houseAction >= MAX_AUCTION_HOUSE_TYPE && urand(0, 99) < m_chanceBuy)
     {
@@ -260,8 +296,8 @@ void AuctionHouseBot::Update()
         for (AuctionHouseObject::AuctionEntryMap::const_iterator itr = bounds.first; itr != bounds.second; ++itr)
         {
             AuctionEntry* auction = itr->second;
-            if (auction->owner == 0 && auction->bid == 0)
-                continue; // ignore bidding/buying auctions that were created by ahbot and not bidded on by player
+            if (auction->owner == 0 && (m_neverBuyBotAuctions || auction->bid == 0))
+                continue; // never buy AHBot auctions when configured; otherwise retain legacy outbid behaviour
             Item* item = sAuctionMgr.GetAItem(auction->itemGuidLow);
             if (!item)
                 continue; // shouldn't happen, but apparently it does(?)
@@ -273,11 +309,14 @@ void AuctionHouseBot::Update()
                 continue; // item is blacklisted
 
             uint32 buyItemCheck = ValueWithVariance(iterator != m_itemData.end() ? iterator->second.Value : CalculateBuyoutPrice(prototype));
-            buyItemCheck *= item->GetCount();
+            buyItemCheck = uint32(uint64(buyItemCheck) * item->GetCount() * m_buyValue / 100);
             uint32 bidPrice = auction->bid + auction->GetAuctionOutBid();
             if (auction->startbid > bidPrice)
                 bidPrice = auction->startbid;
-            if (auction->buyout > 0 && buyItemCheck > auction->buyout)
+            if (m_buyMaxPrice > 0 && bidPrice > m_buyMaxPrice)
+                continue;
+            bool buyoutWithinLimit = m_buyMaxPrice == 0 || auction->buyout <= m_buyMaxPrice;
+            if (auction->buyout > 0 && buyoutWithinLimit && buyItemCheck >= auction->buyout)
                 buyoutAuctions.push_back(auction); // can't buyout item here as that modifies the AuctionEntryMap, invalidating the iterator
             else if (buyItemCheck > bidPrice)
                 auction->UpdateBid(bidPrice);
@@ -285,6 +324,31 @@ void AuctionHouseBot::Update()
         for (auto auction : buyoutAuctions)
             auction->UpdateBid(auction->buyout);
     }
+}
+
+uint32 AuctionHouseBot::CountBotAuctions(AuctionHouseObject const* auctionHouse) const
+{
+    uint32 count = 0;
+    AuctionHouseObject::AuctionEntryMapBounds bounds = auctionHouse->GetAuctionsBounds();
+    for (AuctionHouseObject::AuctionEntryMap::const_iterator itr = bounds.first; itr != bounds.second; ++itr)
+        if (itr->second->owner == 0)
+            ++count;
+    return count;
+}
+
+bool AuctionHouseBot::IsAllowedToSell(ItemPrototype const* prototype) const
+{
+    if (prototype->Quality >= MAX_ITEM_QUALITY || prototype->Class >= MAX_ITEM_CLASS || prototype->Quality > m_maxQuality)
+        return false;
+    if (prototype->Bonding == BIND_WHEN_PICKED_UP || prototype->Bonding == BIND_QUEST_ITEM)
+        return false;
+    if (prototype->Flags & ITEM_FLAG_HAS_LOOT)
+        return false;
+    if (m_excludeQuestItems && prototype->Class == ITEM_CLASS_QUEST)
+        return false;
+    if (m_excludeConjuredItems && (prototype->Flags & ITEM_FLAG_CONJURED))
+        return false;
+    return true;
 }
 
 bool AuctionHouseBot::ReloadAllConfig()
@@ -474,7 +538,8 @@ void AuctionHouseBot::ParseLevelConstraints()
     m_ignoreGm = m_ahBotCfg.GetBoolDefault("AuctionHouseBot.Level.IgnoreGmAccounts", false);
     m_levelRefreshInterval = m_ahBotCfg.GetIntDefault("AuctionHouseBot.Level.DynamicRefreshInterval", 10) * MINUTE;
     m_lastLevelUpdateTime = time(nullptr);
-    m_maxRequiredLevel = GetMinMaxConfig("AuctionHouseBot.Level.MaxRequired", 1, STRONG_MAX_LEVEL, DEFAULT_MAX_LEVEL);
+    m_staticMaxRequiredLevel = GetMinMaxConfig("AuctionHouseBot.Level.MaxRequired", 1, STRONG_MAX_LEVEL, DEFAULT_MAX_LEVEL);
+    m_maxRequiredLevel = m_staticMaxRequiredLevel;
 
     if (m_useDynamicMaxLevel)
     {
@@ -550,7 +615,8 @@ void AuctionHouseBot::UpdateDynamicMaxLevel()
     }
     else
     {
-	sLog.outError("AHBot Error: No online characters found. Retaining static max required level %u", m_maxRequiredLevel);
+        m_maxRequiredLevel = m_staticMaxRequiredLevel;
+        sLog.outString("AHBot Notice: No online characters found. Using static max required level %u", m_maxRequiredLevel);
     }
 }
 
