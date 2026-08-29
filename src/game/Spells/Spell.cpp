@@ -6857,8 +6857,13 @@ bool Spell::IgnoreItemRequirements() const
     }
 #endif
 
-    // Workaround for double shard problem
-    if (m_IsTriggeredSpell || this->m_spellInfo->Id == 46546)
+    // Ritual of Summoning's parent spell deliberately does not consume resources;
+    // its triggered child spell is responsible for consuming the Soul Shard.
+    if (m_spellInfo->Id == 46546)
+        return false;
+
+    // Workaround for triggered spells consuming the same reagent as their parent.
+    if (m_IsTriggeredSpell)
     {
         /// Not own traded item (in trader trade slot) req. reagents including triggered spell case
         if (Item* targetItem = m_targets.getItemTarget())

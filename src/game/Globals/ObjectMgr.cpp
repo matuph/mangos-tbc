@@ -9597,7 +9597,17 @@ void ObjectMgr::LoadTrainers(char const* tableName, bool isTemplates)
         for (int i = 0; i < MAX_EFFECT_INDEX; ++i)
         {
             if (spellinfo->Effect[i] == SPELL_EFFECT_LEARN_SPELL && spellinfo->EffectTriggerSpell[i])
-                trainerSpell.learnedSpell.push_back(spellinfo->EffectTriggerSpell[i]);
+            {
+                switch (spellinfo->EffectImplicitTargetA[i])
+                {
+                    case TARGET_NONE:
+                    case TARGET_UNIT_CASTER:
+                        trainerSpell.learnedSpell.push_back(spellinfo->EffectTriggerSpell[i]);
+                        break;
+                    default:
+                        break;
+                }
+            }
         }
 
         for (auto& learnedSpell : trainerSpell.learnedSpell)
