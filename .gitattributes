@@ -6,6 +6,10 @@
 src/shared/revision_nr.h eol=lf
 src/shared/revision_sql.h eol=lf
 
+# Scripts and Linux service configuration must never be checked out as CRLF.
+*.sh         text eol=lf
+contrib/server_scripts/*.conf text eol=lf
+
 # Whitespace rules
 # strict (no trailing, no tabs)
 *.cpp        whitespace=trailing-space,space-before-tab,tab-in-indent,cr-at-eol
