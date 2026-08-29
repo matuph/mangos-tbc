@@ -252,11 +252,22 @@ echo | tee -a "$DETAIL_LOG_FILE"
 ## Extract dbcs and maps
 if [ "$USE_AD" = "1" ]
 then
- echo "$(date): Start extraction of DBCs and map files..." | tee -a "$LOG_FILE"
- "$PREFIX"/ad $AD_RES $AD_OPT_RES | tee -a "$DETAIL_LOG_FILE"
- echo "$(date): Extracting of DBCs and map files finished" | tee -a "$LOG_FILE"
- echo | tee -a "$LOG_FILE"
- echo | tee -a "$DETAIL_LOG_FILE"
+  file=$(mktemp)
+  echo "$(date): Start extraction of DBCs and map files..." | tee -a "$LOG_FILE"
+  { "$PREFIX"/ad $AD_RES $AD_OPT_RES; echo $? > "$file"; } | tee -a "$DETAIL_LOG_FILE"
+  exit_code=$(cat "$file")
+  rm "$file"
+  if [ "$exit_code" -ne "0" ]; then
+    echo "$(date): Extraction of DBCs and map files failed. Aborting. See the detailed log."
+    exit "$exit_code"
+  fi
+  if ! "$PREFIX"/ValidateResources.sh dbc-maps "${OUTPUT_PATH:-.}" | tee -a "$DETAIL_LOG_FILE"; then
+    echo "$(date): DBC/map validation failed. Aborting. See the detailed log."
+    exit 1
+  fi
+  echo "$(date): Extracting and validating DBCs and map files finished" | tee -a "$LOG_FILE"
+  echo | tee -a "$LOG_FILE"
+  echo | tee -a "$DETAIL_LOG_FILE"
 fi
 
 ## Extract vmaps
@@ -288,7 +299,11 @@ then
     exit "$exit_code"
   fi
   rm "$file"
-  echo "$(date): Assembling of vmaps finished" | tee -a "$LOG_FILE"
+  if ! "$PREFIX"/ValidateResources.sh vmaps "${OUTPUT_PATH:-.}" | tee -a "$DETAIL_LOG_FILE"; then
+    echo "$(date): VMap validation failed. Aborting. See the detailed log."
+    exit 1
+  fi
+  echo "$(date): Assembling and validating vmaps finished" | tee -a "$LOG_FILE"
 
   echo | tee -a "$LOG_FILE"
   echo | tee -a "$DETAIL_LOG_FILE"
