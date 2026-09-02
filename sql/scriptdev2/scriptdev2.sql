@@ -36,7 +36,6 @@ INSERT INTO scripted_areatrigger VALUES
 (2067,'at_blackrock_spire'),
 (2746,'at_stormwind_recruiter'),
 (3066,'at_ravenholdt'),
-(3146,'at_hive_tower'),
 -- Darnassian bank
 (3546,'at_childrens_week_spot'),
 -- Undercity - Throne Room
