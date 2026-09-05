@@ -1,7 +1,17 @@
 # CMaNGOS TBC screen restarter
 
-Copy both files to the server, adjust `cmangos-restarter.conf`, and make the
-script executable:
+Install the restarter for the default server path:
+
+    chmod +x install-restarter.sh
+    ./install-restarter.sh
+
+For a different installation prefix, pass it as the first argument:
+
+    ./install-restarter.sh /srv/cmangos-tbc
+
+Then adjust the installed `bin/cmangos-restarter.conf` if required. The manual
+alternative is to copy `cmangos-restarter.sh` and `cmangos-restarter.conf` into
+the same directory and make the script executable:
 
     chmod +x cmangos-restarter.sh
     sudo apt install screen gdb
