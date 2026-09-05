@@ -40,3 +40,9 @@ screen session is closed; the script never uses a global `killall -9`.
 `update-cmangos-sources.sh` updates sibling `mangos-tbc` and `tbc-db`
 repositories from the official CMaNGOS upstream while retaining the checked-out
 custom branches. See `doc/Updating-Custom-TBC-DE.md` for the German guide.
+
+## Optimized build
+
+`build-cmangos-tbc.sh` configures and installs the custom TBC Core. It selects
+four or six parallel compiler jobs based on CPU and available memory and uses
+`ccache` when installed. See `doc/Build-Custom-TBC-DE.md` for the German guide.
