@@ -34,3 +34,9 @@ The stop command removes the supervisor marker before sending `saveall` and a
 graceful world shutdown. Therefore an intentional stop does not trigger an
 automatic restart. If shutdown exceeds `SHUTDOWN_WAIT`, only the matching
 screen session is closed; the script never uses a global `killall -9`.
+
+## Source updates
+
+`update-cmangos-sources.sh` updates sibling `mangos-tbc` and `tbc-db`
+repositories from the official CMaNGOS upstream while retaining the checked-out
+custom branches. See `doc/Updating-Custom-TBC-DE.md` for the German guide.
