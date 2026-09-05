@@ -187,7 +187,7 @@ INSERT INTO `npc_vendor` (`entry`,`slot`,`item`,`maxcount`,`incrtime`,`ExtendedC
 (90020,0,3358,0,0,0),(90020,0,3818,0,0,0),(90020,0,3820,0,0,0),(90020,0,3819,0,0,0),
 (90020,0,3821,0,0,0),(90020,0,3824,0,0,0),(90020,0,8831,0,0,0),(90020,0,8836,0,0,0),
 (90020,0,8838,0,0,0),(90020,0,13463,0,0,0),(90020,0,13464,0,0,0),(90020,0,13465,0,0,0),
-(90020,0,13466,0,0,0),(90020,0,13467,0,0,0),(90020,0,13468,0,0,0),(90020,0,13463,0,0,0),
+(90020,0,13466,0,0,0),(90020,0,13467,0,0,0),(90020,0,13468,0,0,0),
 (90020,0,3371,0,0,0),(90020,0,8925,0,0,0);
 
 -- Blacksmithing: TBC ores/bars + classic progression materials
@@ -198,8 +198,7 @@ INSERT INTO `npc_vendor` (`entry`,`slot`,`item`,`maxcount`,`incrtime`,`ExtendedC
 (90021,0,23446,0,0,0),(90021,0,2840,0,0,0),(90021,0,2841,0,0,0),(90021,0,2842,0,0,0),
 (90021,0,3575,0,0,0),(90021,0,3576,0,0,0),(90021,0,3859,0,0,0),(90021,0,3860,0,0,0),
 (90021,0,6037,0,0,0),(90021,0,3864,0,0,0),(90021,0,12359,0,0,0),(90021,0,12360,0,0,0),
-(90021,0,12361,0,0,0),(90021,0,23445,0,0,0),(90021,0,23446,0,0,0),(90021,0,3466,0,0,0),
-(90021,0,2880,0,0,0),(90021,0,3466,0,0,0);
+(90021,0,12361,0,0,0),(90021,0,3466,0,0,0),(90021,0,2880,0,0,0);
 
 -- Enchanting
 INSERT INTO `npc_vendor` (`entry`,`slot`,`item`,`maxcount`,`incrtime`,`ExtendedCost`) VALUES
@@ -259,7 +258,7 @@ INSERT INTO `npc_vendor` (`entry`,`slot`,`item`,`maxcount`,`incrtime`,`ExtendedC
 INSERT INTO `npc_vendor` (`entry`,`slot`,`item`,`maxcount`,`incrtime`,`ExtendedCost`) VALUES
 (90031,0,6256,0,0,0),(90031,0,6529,0,0,0),(90031,0,6530,0,0,0),(90031,0,6532,0,0,0),
 (90031,0,6533,0,0,0),(90031,0,6538,0,0,0),(90031,0,6539,0,0,0),(90031,0,6365,0,0,0),
-(90031,0,6366,0,0,0),(90031,0,6367,0,0,0),(90031,0,6529,0,0,0);
+(90031,0,6366,0,0,0),(90031,0,6367,0,0,0);
 
 -- First Aid
 INSERT INTO `npc_vendor` (`entry`,`slot`,`item`,`maxcount`,`incrtime`,`ExtendedCost`) VALUES
@@ -346,4 +345,3 @@ INSERT INTO `npc_trainer` (`entry`,`spell`,`spellcost`,`reqskill`,`reqskillvalue
 INSERT INTO `npc_trainer` (`entry`,`spell`,`spellcost`,`reqskill`,`reqskillvalue`,`reqlevel`) SELECT 90060,`spell`,`spellcost`,`reqskill`,`reqskillvalue`,`reqlevel` FROM `npc_trainer` WHERE `entry`=8306;
 INSERT INTO `npc_trainer` (`entry`,`spell`,`spellcost`,`reqskill`,`reqskillvalue`,`reqlevel`) SELECT 90061,`spell`,`spellcost`,`reqskill`,`reqskillvalue`,`reqlevel` FROM `npc_trainer` WHERE `entry`=3607;
 INSERT INTO `npc_trainer` (`entry`,`spell`,`spellcost`,`reqskill`,`reqskillvalue`,`reqlevel`) SELECT 90062,`spell`,`spellcost`,`reqskill`,`reqskillvalue`,`reqlevel` FROM `npc_trainer` WHERE `entry`=2326;
-
