@@ -92,13 +92,13 @@ class AuctionHouseBot
         std::vector<int32> m_skinningLootConfig;
         std::vector<int32> m_professionItemsConfig;
 
-	bool m_useDynamicMaxLevel;
-	bool m_ignoreGm;
-	uint32 m_lastLevelUpdateTime = 0;
-	uint32 m_levelRefreshInterval = 0;
-        uint32 m_staticMaxRequiredLevel;
-	uint32 m_maxRequiredLevel;
-	uint32 m_maxItemLevel;
+        bool m_useDynamicMaxLevel = false;
+        bool m_ignoreGm = false;
+        uint32 m_lastLevelUpdateTime = 0;
+        uint32 m_levelRefreshInterval = 0;
+        uint32 m_staticMaxRequiredLevel = 70;
+        uint32 m_maxRequiredLevel = 70;
+        uint32 m_maxItemLevel = 255;
 
         std::vector<std::vector<uint32>> m_itemValue = std::vector<std::vector<uint32>>(MAX_ITEM_QUALITY, std::vector<uint32>(MAX_ITEM_CLASS));
         bool m_vendorValue;

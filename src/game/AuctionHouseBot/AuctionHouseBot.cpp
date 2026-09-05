@@ -32,7 +32,11 @@
 
 INSTANTIATE_SINGLETON_1(AuctionHouseBot);
 
-AuctionHouseBot::AuctionHouseBot() : m_configFileName(_AUCTIONHOUSEBOT_CONFIG), m_houseAction(-1)
+AuctionHouseBot::AuctionHouseBot()
+    : m_configFileName(_AUCTIONHOUSEBOT_CONFIG), m_houseAction(-1),
+      m_useDynamicMaxLevel(false), m_ignoreGm(false),
+      m_staticMaxRequiredLevel(DEFAULT_MAX_LEVEL),
+      m_maxRequiredLevel(DEFAULT_MAX_LEVEL), m_maxItemLevel(STRONG_MAX_LEVEL)
 {
 }
 
@@ -189,7 +193,8 @@ void AuctionHouseBot::Update()
     AuctionHouseType houseType = AuctionHouseType(m_houseAction % MAX_AUCTION_HOUSE_TYPE);
     AuctionHouseObject* auctionHouse = sAuctionMgr.GetAuctionsMap(houseType);
     uint32 botAuctionCount = CountBotAuctions(auctionHouse);
-    bool shouldSell = botAuctionCount < m_stockMin || (botAuctionCount < m_stockMax && urand(0, 99) < m_chanceSell);
+    bool shouldSell = m_chanceSell > 0 &&
+        (botAuctionCount < m_stockMin || (botAuctionCount < m_stockMax && urand(0, 99) < m_chanceSell));
     if (m_houseAction < MAX_AUCTION_HOUSE_TYPE && shouldSell)
     {
 	// Lazy-refresh dynamic level
@@ -560,61 +565,74 @@ void AuctionHouseBot::UpdateDynamicMaxLevel()
     // Attempt to query all online characters ordered by level
     if (auto result = CharacterDatabase.PQuery("SELECT account, level FROM characters WHERE online = 1 ORDER BY level DESC"))
     {
-	// Always grab the first result as fallback (highest overall)
-	Field* firstRow = result->Fetch();
-	uint32 firstAcct = firstRow[0].GetUInt32();
-	uint32 fallbackLevel = firstRow[1].GetUInt32();
-	m_maxRequiredLevel = fallbackLevel;
+        // Always grab the first result as fallback (highest overall)
+        Field* firstRow = result->Fetch();
+        uint32 firstAcct = firstRow[0].GetUInt32();
+        uint32 fallbackLevel = firstRow[1].GetUInt32();
+        if (fallbackLevel < 1 || fallbackLevel > DEFAULT_MAX_LEVEL)
+        {
+            sLog.outError("AHBot: Character level %u is invalid for TBC; using configured level %u.", fallbackLevel, m_staticMaxRequiredLevel);
+            fallbackLevel = m_staticMaxRequiredLevel;
+        }
+        m_maxRequiredLevel = fallbackLevel;
 
-	if (m_ignoreGm)
-	{
-	    std::set<uint32> gmAccounts;
-	    // Collect GM accounts
-	    if (auto gmResult = LoginDatabase.PQuery("SELECT id FROM account WHERE gmlevel > 0"))
-	    {
-		do
-		{
-		    Field* field = gmResult->Fetch();
-		    gmAccounts.insert(field[0].GetUInt32());
-		} while (gmResult->NextRow());
-	    }
+        if (m_ignoreGm)
+        {
+            std::set<uint32> gmAccounts;
+            // Collect GM accounts
+            if (auto gmResult = LoginDatabase.PQuery("SELECT id FROM account WHERE gmlevel > 0"))
+            {
+                do
+                {
+                    Field* field = gmResult->Fetch();
+                    gmAccounts.insert(field[0].GetUInt32());
+                } while (gmResult->NextRow());
+            }
 
             // Look for highest non-GM character
-	    if (gmAccounts.count(firstAcct) == 0)
-	    {
-		sLog.outString("AHBot Dynamic max required level (excluding GMs) set to %u", fallbackLevel);
-	    }
-	    else
-	    {
-		bool foundNonGm = false;
-		while (result->NextRow())
-		{
-		    Field* row = result->Fetch();
-		    uint32 accId = row[0].GetUInt32();
-		    uint32 level = row[1].GetUInt32();
+            if (gmAccounts.count(firstAcct) == 0)
+            {
+                sLog.outString("AHBot Dynamic max required level (excluding GMs) set to %u", fallbackLevel);
+            }
+            else
+            {
+                bool foundNonGm = false;
+                while (result->NextRow())
+                {
+                    Field* row = result->Fetch();
+                    uint32 accId = row[0].GetUInt32();
+                    uint32 level = row[1].GetUInt32();
 
-		    if (gmAccounts.count(accId) == 0)
-		    {
-			m_maxRequiredLevel = level;
-			foundNonGm = true;
-			sLog.outString("AHBot Dynamic max required level (excluding GMs) set to %u", m_maxRequiredLevel);
-			break;
-		    }
-		}
+                    if (level < 1 || level > DEFAULT_MAX_LEVEL)
+                        continue;
 
-		if (!foundNonGm)
-		{
-		    sLog.outString("AHBot Notice: No non-GM players online. Fallback max required level (including GMs) set to %u", fallbackLevel);
-		}
-	    }
-	}
-	else
-	{
-	    sLog.outString("AHBot Dynamic max required level set to %u", m_maxRequiredLevel);
-	}
+                    if (gmAccounts.count(accId) == 0)
+                    {
+                        m_maxRequiredLevel = level;
+                        foundNonGm = true;
+                        sLog.outString("AHBot Dynamic max required level (excluding GMs) set to %u", m_maxRequiredLevel);
+                        break;
+                    }
+                }
+
+                if (!foundNonGm)
+                {
+                    sLog.outString("AHBot Notice: No non-GM players online. Fallback max required level (including GMs) set to %u", fallbackLevel);
+                }
+            }
+        }
+        else
+        {
+            sLog.outString("AHBot Dynamic max required level set to %u", m_maxRequiredLevel);
+        }
     }
     else
     {
+        if (m_staticMaxRequiredLevel < 1 || m_staticMaxRequiredLevel > STRONG_MAX_LEVEL)
+        {
+            sLog.outError("AHBot: Static max required level %u is invalid; restoring TBC default %u.", m_staticMaxRequiredLevel, DEFAULT_MAX_LEVEL);
+            m_staticMaxRequiredLevel = DEFAULT_MAX_LEVEL;
+        }
         m_maxRequiredLevel = m_staticMaxRequiredLevel;
         sLog.outString("AHBot Notice: No online characters found. Using static max required level %u", m_maxRequiredLevel);
     }
@@ -622,6 +640,13 @@ void AuctionHouseBot::UpdateDynamicMaxLevel()
 
 void AuctionHouseBot::CalculateItemLevelCap()
 {
+    if (m_maxRequiredLevel < 1 || m_maxRequiredLevel > STRONG_MAX_LEVEL)
+    {
+        sLog.outError("AHBot: Max required level %u is invalid; restoring configured level %u.", m_maxRequiredLevel, m_staticMaxRequiredLevel);
+        m_maxRequiredLevel = (m_staticMaxRequiredLevel >= 1 && m_staticMaxRequiredLevel <= STRONG_MAX_LEVEL)
+            ? m_staticMaxRequiredLevel : DEFAULT_MAX_LEVEL;
+    }
+
     if (m_maxRequiredLevel >= DEFAULT_MAX_LEVEL)
     {
         m_maxItemLevel = STRONG_MAX_LEVEL;
