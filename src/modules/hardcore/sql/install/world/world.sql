@@ -83,12 +83,19 @@ SET @START_SPELL_ID := 33500;
 SET @END_SPELL_ID := @START_SPELL_ID+1;
 DELETE FROM `spell_template` WHERE `id` BETWEEN @START_SPELL_ID AND @END_SPELL_ID;
 
--- Current CMaNGOS spell_template contains server-side spell overrides only.
--- Both challenge markers are permanent dummy auras applied to the player.
-INSERT INTO `spell_template`
-(`id`, `proc_flags`, `proc_chance`, `duration_index`, `effect0`,
- `effect0_implicit_target_a`, `effect0_radius_idx`, `effect0_apply_aura_name`,
- `effect0_misc_value`, `effect0_misc_value_b`, `effect0_trigger_spell`, `comments`)
-VALUES
-(@START_SPELL_ID,   0, 101, 21, 6, 1, 0, 4, 0, 0, 0, 'Hardcore Challenge'),
-(@START_SPELL_ID+1, 0, 101, 21, 6, 1, 0, 4, 0, 0, 0, 'Self Found Challenge');
+-- TBC-DB Full_DB can still use the legacy full Spell.dbc schema, while a
+-- migrated Core database uses the compact server-side spell override schema.
+-- Detect the installed layout and create the same permanent dummy auras in it.
+SET @COMPACT_SPELL_SCHEMA := (
+    SELECT COUNT(*) FROM `information_schema`.`COLUMNS`
+    WHERE `TABLE_SCHEMA` = DATABASE()
+      AND `TABLE_NAME` = 'spell_template'
+      AND `COLUMN_NAME` = 'proc_flags'
+);
+SET @HARDCORE_SPELL_SQL := IF(@COMPACT_SPELL_SCHEMA > 0,
+    'INSERT INTO `spell_template` (`id`,`proc_flags`,`proc_chance`,`duration_index`,`effect0`,`effect0_implicit_target_a`,`effect0_radius_idx`,`effect0_apply_aura_name`,`effect0_misc_value`,`effect0_misc_value_b`,`effect0_trigger_spell`,`comments`) VALUES (33500,0,101,21,6,1,0,4,0,0,0,''Hardcore Challenge''),(33501,0,101,21,6,1,0,4,0,0,0,''Self Found Challenge'')',
+    'INSERT INTO `spell_template` (`Id`,`Attributes`,`AttributesEx3`,`ProcFlags`,`ProcChance`,`BaseLevel`,`SpellLevel`,`DurationIndex`,`RangeIndex`,`EquippedItemClass`,`EquippedItemSubClassMask`,`Effect1`,`EffectDieSides1`,`EffectBaseDice1`,`EffectImplicitTargetA1`,`EffectApplyAuraName1`,`SpellVisual`,`SpellIconID`,`SpellName`,`DmgMultiplier1`,`DmgMultiplier2`,`DmgMultiplier3`,`SchoolMask`,`IsServerSide`,`AttributesServerside`) VALUES (33500,2147483648,1048576,0,101,1,1,21,13,-1,-1,6,1,1,1,4,222,61,''Hardcore Challenge'',1,1,1,1,1,0),(33501,2147483648,1048576,0,101,1,1,21,13,-1,-1,6,1,1,1,4,222,1573,''Self Found Challenge'',1,1,1,1,1,0)'
+);
+PREPARE hardcore_spell_stmt FROM @HARDCORE_SPELL_SQL;
+EXECUTE hardcore_spell_stmt;
+DEALLOCATE PREPARE hardcore_spell_stmt;
