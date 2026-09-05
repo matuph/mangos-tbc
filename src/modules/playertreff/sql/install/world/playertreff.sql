@@ -75,6 +75,10 @@ BEGIN
   INSERT INTO `pt_seed` SELECT * FROM `creature_template` WHERE `Entry`=1;
   UPDATE `pt_seed` SET `Entry`=new_entry, `Name`=new_name, `SubName`='Playertreff',
     `MinLevel`=70, `MaxLevel`=70, `Faction`=35, `NpcFlags`=new_flags,
+    `DisplayId1`=@MODEL, `DisplayIdProbability1`=100,
+    `DisplayId2`=0, `DisplayIdProbability2`=0,
+    `DisplayId3`=0, `DisplayIdProbability3`=0,
+    `DisplayId4`=0, `DisplayIdProbability4`=0,
     `TrainerType`=0, `TrainerSpell`=0, `TrainerClass`=0, `TrainerRace`=0,
     `TrainerTemplateId`=0, `VendorTemplateId`=0, `GossipMenuId`=0, `ScriptName`='';
   INSERT INTO `creature_template` SELECT * FROM `pt_seed`;

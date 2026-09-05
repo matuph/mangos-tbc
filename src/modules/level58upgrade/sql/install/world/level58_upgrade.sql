@@ -41,6 +41,10 @@ CREATE TEMPORARY TABLE `level58_npc` LIKE `creature_template`;
 INSERT INTO `level58_npc` SELECT * FROM `creature_template` WHERE `Entry`=1;
 UPDATE `level58_npc` SET `Entry`=90005, `Name`='Charakter-Aufwerter',
   `SubName`='Level 58 / Dungeon-Set 1 / 120.000 Gold', `MinLevel`=60, `MaxLevel`=60,
+  `DisplayId1`=1960, `DisplayIdProbability1`=100,
+  `DisplayId2`=0, `DisplayIdProbability2`=0,
+  `DisplayId3`=0, `DisplayIdProbability3`=0,
+  `DisplayId4`=0, `DisplayIdProbability4`=0,
   `Faction`=35, `NpcFlags`=1, `GossipMenuId`=0, `ScriptName`='';
 INSERT INTO `creature_template` SELECT * FROM `level58_npc`;
 DROP TEMPORARY TABLE `level58_npc`;
