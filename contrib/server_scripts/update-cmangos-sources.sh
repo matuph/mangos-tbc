@@ -1,185 +1,107 @@
 #!/usr/bin/env bash
+# Merge official CMaNGOS updates into the current custom branches.
+set -Eeuo pipefail
 
-set -euo pipefail
-
-SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
-CORE_PATH="$(cd -- "$SCRIPT_DIR/../.." && pwd -P)"
-DB_PATH="${TBC_DB_PATH:-$(dirname "$CORE_PATH")/tbc-db}"
-CORE_UPSTREAM_URL="${CORE_UPSTREAM_URL:-https://github.com/cmangos/mangos-tbc.git}"
-DB_UPSTREAM_URL="${DB_UPSTREAM_URL:-https://github.com/cmangos/tbc-db.git}"
-UPSTREAM_BRANCH="${CMANGOS_UPSTREAM_BRANCH:-master}"
+CORE_PATH="${CORE_PATH:-/home/matuph/source/cmangos/mangos-tbc}"
+DB_PATH="${TBC_DB_PATH:-}"
 CHECK_ONLY=false
-UPDATE_SUBMODULES=true
+SAVE_LOCAL=false
+SUBMODULES=true
+usage() {
+    cat <<'HELP'
+Usage: bash update-cmangos-sources.sh [options]
+  --core-path PATH   Core repository (default /home/matuph/source/cmangos/mangos-tbc)
+  --db-path PATH     TBC-DB repository (default: sibling tbc-db)
+  --check            Fetch and report only; do not commit or merge
+  --save-local       Commit existing tracked and untracked files before merging
+  --no-submodules    Skip submodule synchronization
+  -h, --help         Show help
 
-usage()
-{
-    cat <<EOF
-Usage: $0 [--check] [--no-submodules] [--db-path PATH]
-
-Updates the current custom branches of mangos-tbc and tbc-db from the
-official CMaNGOS upstream repositories. Nothing is pushed automatically.
-
-Options:
-  --check             Fetch and report available commits without merging.
-  --no-submodules     Do not update Core Git submodules after the merge.
-  --db-path PATH      Override the default sibling tbc-db directory.
-  -h, --help          Show this help.
-EOF
+Creates backup tags, retains custom changes, stops on conflicts. No push,
+build, database import or server restart. Configure Git name/email first.
+HELP
 }
-
+die() { echo "ERROR: $*" >&2; exit 1; }
 while (($#)); do
     case "$1" in
-        --check)
-            CHECK_ONLY=true
-            ;;
-        --no-submodules)
-            UPDATE_SUBMODULES=false
-            ;;
-        --db-path)
-            [[ $# -ge 2 ]] || { echo "--db-path requires a path" >&2; exit 2; }
-            DB_PATH="$2"
-            shift
-            ;;
-        -h|--help)
-            usage
-            exit 0
-            ;;
-        *)
-            echo "Unknown option: $1" >&2
-            usage >&2
-            exit 2
-            ;;
+        --core-path|--db-path)
+            (($# >= 2)) || die "$1 requires a path"
+            [[ -n "$2" && "$2" != --* ]] || die "$1 requires a path"
+            if [[ "$1" == --core-path ]]; then CORE_PATH="$2"; else DB_PATH="$2"; fi
+            shift 2 ;;
+        --check) CHECK_ONLY=true; shift ;;
+        --save-local) SAVE_LOCAL=true; shift ;;
+        --no-submodules) SUBMODULES=false; shift ;;
+        -h|--help) usage; exit 0 ;;
+        *) die "Unknown option: $1" ;;
     esac
-    shift
+done
+command -v git >/dev/null || die 'Git is required'
+CORE_PATH="$(cd -- "$CORE_PATH" && pwd -P)" || die 'Core path not found'
+DB_PATH="${DB_PATH:-$(dirname "$CORE_PATH")/tbc-db}"
+DB_PATH="$(cd -- "$DB_PATH" && pwd -P)" || die 'TBC-DB path not found'
+[[ "$CORE_PATH" != "$DB_PATH" ]] || die 'Core and DB must be different repositories'
+paths=("$CORE_PATH" "$DB_PATH")
+urls=(https://github.com/cmangos/mangos-tbc.git https://github.com/cmangos/tbc-db.git)
+heads=()
+
+# Preflight both repositories before modifying either working tree.
+for path in "${paths[@]}"; do
+    top="$(git -C "$path" rev-parse --show-toplevel)" || die "Not a repository: $path"
+    [[ "$(cd -- "$top" && pwd -P)" == "$path" ]] || die "Use repository root: $top"
+    git -C "$path" symbolic-ref --quiet HEAD >/dev/null || die "Detached HEAD: $path"
+    for marker in MERGE_HEAD CHERRY_PICK_HEAD REVERT_HEAD rebase-merge rebase-apply; do
+        state="$(git -C "$path" rev-parse --git-path "$marker")"
+        [[ "$state" == /* || "$state" == ?:/* ]] || state="$path/$state"
+        [[ ! -e "$state" ]] || die "Unfinished Git operation in $path ($marker)"
+    done
+    dirty="$(git -C "$path" status --porcelain)"
+    if [[ "$CHECK_ONLY" == false ]]; then
+        git -C "$path" var GIT_AUTHOR_IDENT >/dev/null || die "Configure Git user.name/email in $path"
+        git -C "$path" var GIT_COMMITTER_IDENT >/dev/null || die "Configure Git user.name/email in $path"
+        [[ -z "$dirty" || "$SAVE_LOCAL" == true ]] || die "Uncommitted changes in $path; commit first or use --save-local"
+    fi
 done
 
-require_command()
-{
-    command -v "$1" >/dev/null 2>&1 || { echo "Required command not found: $1" >&2; exit 1; }
-}
+for i in 0 1; do
+    path="${paths[$i]}"
+    git -C "$path" fetch --no-tags "${urls[$i]}" master
+    heads[$i]="$(git -C "$path" rev-parse FETCH_HEAD)"
+    git -C "$path" merge-base HEAD "${heads[$i]}" >/dev/null || die "Unrelated histories: $path"
+    echo "Repository: $path"
+    echo "Missing official commits: $(git -C "$path" rev-list --count "HEAD..${heads[$i]}")"
+    git -C "$path" log --oneline "HEAD..${heads[$i]}"
+done
+[[ "$CHECK_ONLY" == false ]] || exit 0
 
-verify_repository()
-{
-    local label="$1"
-    local path="$2"
-
-    [[ -d "$path/.git" ]] || {
-        echo "$label repository not found: $path" >&2
-        exit 1
-    }
-
+printf -v stamp '%(%Y%m%d-%H%M%S)T' -1
+stamp="$stamp-$$"
+for path in "${paths[@]}"; do
+    git -C "$path" tag "backup/before-upstream-$stamp"
     if [[ -n "$(git -C "$path" status --porcelain)" ]]; then
-        echo "$label has uncommitted changes; commit or stash them first: $path" >&2
+        git -C "$path" add -A
+        git -C "$path" commit -m "Preserve local custom changes before upstream update $stamp"
+    fi
+    git -C "$path" tag "backup/custom-snapshot-$stamp"
+done
+echo "Backup tags: backup/before-upstream-$stamp and backup/custom-snapshot-$stamp"
+
+for i in 0 1; do
+    path="${paths[$i]}"
+    if ! git -C "$path" merge --no-edit "${heads[$i]}"; then
+        echo "Update stopped in $path. Earlier repositories may already be updated." >&2
+        echo "Inspect git status; resolve conflicts and commit, or cancel with git merge --abort." >&2
+        echo "Local changes are saved in backup/custom-snapshot-$stamp." >&2
         exit 1
     fi
-}
-
-prepare_upstream()
-{
-    local path="$1"
-    local url="$2"
-
-    if git -C "$path" remote get-url upstream >/dev/null 2>&1; then
-        git -C "$path" remote set-url upstream "$url"
-    else
-        git -C "$path" remote add upstream "$url"
+    git -C "$path" merge-base --is-ancestor "${heads[$i]}" HEAD
+    if ! git -C "$path" diff --check "backup/custom-snapshot-$stamp" HEAD; then
+        echo "Note: upstream includes whitespace warnings; review the output above." >&2
     fi
-}
-
-fetch_repository()
-{
-    local label="$1"
-    local path="$2"
-    local url="$3"
-
-    echo "==> Fetching $label"
-    prepare_upstream "$path" "$url"
-    git -C "$path" fetch --prune upstream
-    if git -C "$path" remote get-url origin >/dev/null 2>&1; then
-        git -C "$path" fetch --prune origin
+    if [[ "$SUBMODULES" == true && -f "$path/.gitmodules" ]]; then
+        git -C "$path" submodule sync --recursive
+        git -C "$path" submodule update --init --recursive
     fi
-
-    local counts
-    counts="$(git -C "$path" rev-list --left-right --count "HEAD...upstream/$UPSTREAM_BRANCH")"
-    echo "    Current branch: $(git -C "$path" branch --show-current)"
-    echo "    Local-only / upstream-only commits: $counts"
-}
-
-sync_origin()
-{
-    local label="$1"
-    local path="$2"
-    local branch
-    branch="$(git -C "$path" branch --show-current)"
-
-    [[ -n "$branch" ]] || {
-        echo "$label is in detached HEAD state; check out a branch first." >&2
-        exit 1
-    }
-
-    if git -C "$path" show-ref --verify --quiet "refs/remotes/origin/$branch"; then
-        echo "==> Synchronizing $label with origin/$branch"
-        if ! git -C "$path" merge --ff-only "origin/$branch"; then
-            echo "$label and origin/$branch have diverged." >&2
-            echo "Reconcile or push the local commits manually, then run this script again." >&2
-            exit 1
-        fi
-    else
-        echo "==> No origin/$branch branch found for $label; keeping the local branch"
-    fi
-}
-
-merge_repository()
-{
-    local label="$1"
-    local path="$2"
-
-    if git -C "$path" merge-base --is-ancestor "upstream/$UPSTREAM_BRANCH" HEAD; then
-        echo "==> $label is already up to date"
-        return
-    fi
-
-    echo "==> Merging official upstream into $label"
-    if ! git -C "$path" merge --no-edit "upstream/$UPSTREAM_BRANCH"; then
-        echo >&2
-        echo "Merge conflict in $label. Resolve the files and run 'git commit'," >&2
-        echo "or cancel with: git -C '$path' merge --abort" >&2
-        exit 1
-    fi
-}
-
-require_command git
-verify_repository "Core" "$CORE_PATH"
-verify_repository "TBC-DB" "$DB_PATH"
-
-echo "Core:   $CORE_PATH"
-echo "TBC-DB: $DB_PATH"
-fetch_repository "Core" "$CORE_PATH" "$CORE_UPSTREAM_URL"
-fetch_repository "TBC-DB" "$DB_PATH" "$DB_UPSTREAM_URL"
-
-if [[ "$CHECK_ONLY" == "true" ]]; then
-    echo "Check completed; no local branches were changed."
-    exit 0
-fi
-
-STAMP="$(date -u '+%Y%m%d-%H%M%S')"
-BACKUP_TAG="backup/before-update-$STAMP"
-git -C "$CORE_PATH" tag "$BACKUP_TAG"
-git -C "$DB_PATH" tag "$BACKUP_TAG"
-echo "Created local backup tag in both repositories: $BACKUP_TAG"
-
-sync_origin "Core" "$CORE_PATH"
-sync_origin "TBC-DB" "$DB_PATH"
-merge_repository "Core" "$CORE_PATH"
-merge_repository "TBC-DB" "$DB_PATH"
-
-if [[ "$UPDATE_SUBMODULES" == "true" ]]; then
-    echo "==> Synchronizing Core submodules"
-    git -C "$CORE_PATH" submodule sync --recursive
-    git -C "$CORE_PATH" submodule update --init --recursive
-fi
-
-echo
-echo "Update completed successfully. Review and compile the Core before pushing."
-echo "Core:   $(git -C "$CORE_PATH" log -1 --oneline)"
-echo "TBC-DB: $(git -C "$DB_PATH" log -1 --oneline)"
+    git -C "$path" status --short --branch
+done
+echo 'Core and TBC-DB updated. Build and test before deploying.'

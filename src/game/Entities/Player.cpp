@@ -11272,7 +11272,7 @@ void Player::DestroyItemCount(Item& item, uint32& count, bool update)
         item.SetCount(item.GetCount() - count);
         count = 0;
         if (IsInWorld() && update)
-            GetMap()->AddUpdateCreateObject(&item);
+            GetMap()->AddUpdateObject(&item);
         item.SetState(ITEM_CHANGED, this);
     }
 }
