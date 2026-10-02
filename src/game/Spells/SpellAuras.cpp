@@ -396,6 +396,7 @@ Aura::Aura(SpellEntry const* spellproto, SpellEffectIndex eff, int32 const* curr
 
 Aura::~Aura()
 {
+    m_scriptRef = nullptr;
     delete m_storage;
     delete m_spellmod;
 }
@@ -1483,7 +1484,7 @@ void Aura::TriggerSpell()
 //                    // Professor Dabiri Talks
 //                    case 36064: break;
 //                    // They Must Burn Bomb Aura
-//                    case 36344: break;        
+//                    case 36344: break;
                     case 36350:                             // They Must Burn Bomb Aura (self)
                         trigger_spell_id = 36325;           // They Must Burn Bomb Drop (DND)
                         break;
@@ -1835,7 +1836,7 @@ void Aura::TriggerSpell()
         // Reget trigger spell proto
         triggeredSpellInfo = sSpellTemplate.LookupEntry<SpellEntry>(trigger_spell_id);
     }
-    else 
+    else
     {
         // for channeled spell cast applied from aura owner to channel target (persistent aura affects already applied to true target)
         // come periodic casts applied to targets, so need select proper caster (ex. 15790)
@@ -1935,7 +1936,7 @@ void Aura::TriggerSpell()
             {
                 casterGUID = target->GetObjectGuid();
                 break;
-            } 
+            }
             case 38652:                                     // Spore Cloud (SSC)
             case 40106:                                     // Merge
             {
@@ -6571,7 +6572,7 @@ void Aura::HandleSpiritOfRedemption(bool apply, bool Real)
         if (target->IsNonMeleeSpellCasted(false))
             target->InterruptNonMeleeSpells(false);
 
-        // set health and mana to maximum        
+        // set health and mana to maximum
         target->SetPower(POWER_MANA, target->GetMaxPower(POWER_MANA));
     }
     // die at aura end
@@ -6703,7 +6704,7 @@ void Aura::PeriodicTick()
             }
 
             // Check for immune (not use charges)
-            // Aura of anger - video evidence confirms this, but attribute is legit because aura is still applied during 
+            // Aura of anger - video evidence confirms this, but attribute is legit because aura is still applied during
             if (!spellProto->HasAttribute(SPELL_ATTR_NO_IMMUNITIES) || overrideImmune) // confirmed Impaling spine goes through immunity
             {
                 if (overrideImmune || target->IsImmuneToDamage(GetSpellSchoolMask(spellProto)))
@@ -7246,7 +7247,7 @@ void Aura::PeriodicDummyTick()
                 case 37025: // Coilfang Water
                     if (target->IsInSwimmableWater())
                         target->CastSpell(target, 37026, TRIGGERED_OLD_TRIGGERED, nullptr, this);
-                    return;          
+                    return;
                 case 39993: // Simon Game START timer, (DND)
                     target->AI()->SendAIEvent(AI_EVENT_CUSTOM_A, target, target);
                     break;
@@ -8628,7 +8629,7 @@ void SpellAuraHolder::UpdateAuraDuration()
     {
         // if caster == target and player, meant to get both
         if (GetAuraSlot() < MAX_AURAS) // only visible auras
-            SendAuraDuration();       
+            SendAuraDuration();
 
         if (caster && caster->IsPlayer())
             SendAuraDurationToCaster(static_cast<Player*>(caster));
@@ -8755,7 +8756,7 @@ GameObjectAura::GameObjectAura(SpellEntry const* spellproto, SpellEffectIndex ef
 }
 
 GameObjectAura::~GameObjectAura()
-{    
+{
 }
 
 void GameObjectAura::Update(uint32 diff)

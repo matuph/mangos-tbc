@@ -680,7 +680,7 @@ inline bool IsSpellRemovedOnEvade(SpellEntry const* spellInfo)
         case 37256:         // Disease Cloud
         case 37266:         // Disease Cloud
         case 37411:         // Skettis Corrupted Ghosts
-        case 37497:         // Shadowmoon Ghost Invisibility (Ghostrider of Karabor in SMV) 
+        case 37497:         // Shadowmoon Ghost Invisibility (Ghostrider of Karabor in SMV)
         case 37509:         // Ghostly Facade
         case 37816:         // Shadowform
         case 38732:         // Fire Shield
@@ -1119,7 +1119,7 @@ inline bool IsOnlySelfTargeting(SpellEntry const* spellInfo)
     }
     return true;
 }
- 
+
 inline bool IsDirectDamageSpell(SpellEntry const* spellInfo)
 {
     if (spellInfo->Effect[EFFECT_INDEX_0] == SPELL_EFFECT_SCHOOL_DAMAGE || spellInfo->Effect[EFFECT_INDEX_0] == SPELL_EFFECT_WEAPON_DAMAGE_NOSCHOOL)
@@ -1614,7 +1614,7 @@ inline bool CanPierceImmuneAura(SpellEntry const* spellInfo, SpellEntry const* a
 }
 
 inline void GetChainJumpRange(SpellEntry const* spellInfo, SpellEffectIndex effIdx, float& minSearchRangeCaster, float& maxSearchRangeTarget)
-{ 
+{
     const SpellRangeEntry* range = sSpellRangeStore.LookupEntry(spellInfo->rangeIndex);
     if (spellInfo->DmgClass == SPELL_DAMAGE_CLASS_MELEE)
         maxSearchRangeTarget = range->maxRange;
@@ -2267,6 +2267,8 @@ inline bool IsProfessionOrRidingSkill(uint32 skill)
     return  IsProfessionSkill(skill) || skill == SKILL_RIDING;
 }
 
+typedef std::vector<std::unique_ptr<SpellEntry>> SpellEntryMap;
+
 class SpellMgr
 {
         friend struct DoSpellProcEvent;
@@ -2710,6 +2712,9 @@ class SpellMgr
         void LoadSpellPetAuras();
         void LoadSpellAreas();
 
+        SpellEntry const* GetSpellEntry(uint32 spellId) const { return spellId < GetMaxSpellId() ? mSpellEntryMap[spellId].get() : nullptr; }
+        uint32 GetMaxSpellId() const { return mSpellEntryMap.size(); }
+
     private:
         SpellChainMap      mSpellChains;
         SpellChainMapNext  mSpellChainsNext;
@@ -2728,6 +2733,8 @@ class SpellMgr
         SpellAreaMap         mSpellAreaMap;
         SpellAreaForAuraMap  mSpellAreaForAuraMap;
         SpellAreaForAreaMap  mSpellAreaForAreaMap;
+
+        SpellEntryMap      mSpellEntryMap;
 };
 
 #define sSpellMgr SpellMgr::Instance()

@@ -43,6 +43,9 @@
 #ifdef ENABLE_MODULES
 #include "ModuleMgr.h"
 #endif
+#ifdef BUILD_ELUNA
+#include "LuaEngine/LuaEngine.h"
+#endif
 
 #include <cstdarg>
 
@@ -1493,6 +1496,11 @@ void ChatHandler::ExecuteCommand(const char* text)
         }
         case CHAT_COMMAND_UNKNOWN_SUBCOMMAND:
         {
+#ifdef BUILD_ELUNA
+            if(Eluna* e = sWorld.GetEluna())
+                if (!e->OnCommand(m_session ? m_session->GetPlayer() : NULL, fullcmd.c_str()))
+                    return;
+#endif
             SendSysMessage(LANG_NO_SUBCMD);
             ShowHelpForCommand(command->ChildCommands, text);
             SetSentErrorMessage(true);
@@ -1505,6 +1513,11 @@ void ChatHandler::ExecuteCommand(const char* text)
                 return;
 #endif
 
+#ifdef BUILD_ELUNA
+            if (Eluna* e = sWorld.GetEluna())
+                if (!e->OnCommand(m_session ? m_session->GetPlayer() : NULL, fullcmd.c_str()))
+                    return;
+#endif
             SendSysMessage(LANG_NO_CMD);
             SetSentErrorMessage(true);
             break;
@@ -3568,8 +3581,11 @@ bool CliHandler::isAvailable(ChatCommand const& cmd) const
 
 void CliHandler::SendSysMessage(const char* str)
 {
-    m_print(str);
-    m_print("\r\n");
+    if (m_print)
+    {
+        m_print(str);
+        m_print("\r\n");
+    }
 }
 
 std::string CliHandler::GetNameLink() const

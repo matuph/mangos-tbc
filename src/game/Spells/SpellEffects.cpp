@@ -58,6 +58,10 @@
 #include "Entities/Transports.h"
 #include "AI/EventAI/CreatureEventAI.h"
 
+#ifdef BUILD_ELUNA
+#include "LuaEngine/LuaEngine.h"
+#endif
+
 pEffect SpellEffects[MAX_SPELL_EFFECTS] =
 {
     &Spell::EffectNULL,                                     //  0
@@ -3086,7 +3090,7 @@ void Spell::EffectTeleportUnits(SpellEffectIndex eff_idx)
         else
             orientation = unitTarget->GetOrientation();
     }
-    
+
     // Teleport
     if (m_targets.m_mapId == UINT32_MAX || m_targets.m_mapId == unitTarget->GetMapId())
     {
@@ -4833,7 +4837,7 @@ void Spell::EffectEnchantItemTmp(SpellEffectIndex eff_idx)
     // select enchantment duration
     uint32 duration = 3600; // old code default - lets see if this will cause pain - 1 hour
     if (damage > 0)
-        duration = damage;                        
+        duration = damage;
 
     // item can be in trade slot and have owner diff. from caster
     Player* item_owner = itemTarget->GetOwner();
@@ -5615,7 +5619,7 @@ void Spell::EffectScriptEffect(SpellEffectIndex eff_idx)
                         case 11: trickspell = 24926; break; // Hallow's End Candy
                         case 12: trickspell = 24927; break; // Hallow's End Candy
                     }
-                    
+
                     m_caster->CastSpell(m_caster, trickspell, TRIGGERED_OLD_TRIGGERED);
                     return;
                 }
@@ -6032,7 +6036,7 @@ void Spell::EffectScriptEffect(SpellEffectIndex eff_idx)
                 {
                     unitTarget->CastSpell(nullptr, 30630, TRIGGERED_OLD_TRIGGERED);
                     return;
-                }               
+                }
                 case 30834:                                 // Infernal Relay
                 {
                     if (!unitTarget)
@@ -6755,6 +6759,12 @@ void Spell::EffectDuel(SpellEffectIndex eff_idx)
     caster->SetGuidValue(PLAYER_DUEL_ARBITER, pGameObj->GetObjectGuid());
     target->SetGuidValue(PLAYER_DUEL_ARBITER, pGameObj->GetObjectGuid());
 
+#ifdef BUILD_ELUNA
+    // used by eluna
+    if (Eluna* e = caster->GetEluna())
+        e->OnDuelRequest(target, caster);
+#endif
+
     m_spellLog.AddLog(uint32(SPELL_EFFECT_DUEL), target->GetPackGUID());
 }
 
@@ -6794,7 +6804,7 @@ void Spell::EffectStuck(SpellEffectIndex /*eff_idx*/)
         }
         else
         {
-            // If the player is alive, but their hearthstone is either not in their inventory (e.g. in the bank) or 
+            // If the player is alive, but their hearthstone is either not in their inventory (e.g. in the bank) or
             // their hearthstone is on cooldown, then the game will try to "nudge" the player in a seemingly random direction.
             // @todo This check could possibly more accurately find a safe position to port to, has the potential for porting underground.
             float x, y, z;

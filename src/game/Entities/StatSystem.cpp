@@ -773,7 +773,7 @@ bool Creature::UpdateStats(Stats stat)
 bool Creature::UpdateAllStats()
 {
     for (int i = STAT_STRENGTH; i < MAX_STATS; ++i)
-        UpdateStats(Stats(i));    
+        UpdateStats(Stats(i));
 
     for (int i = POWER_MANA; i < MAX_POWERS; ++i)
         UpdateMaxPower(Powers(i));
@@ -971,7 +971,7 @@ bool Pet::UpdateStats(Stats stat)
 
     // value = ((base_value * base_pct) + total_value) * total_pct
     float value  = GetTotalStatValue(stat);
-    
+
     float oldValue = GetStat(stat);
     SetStat(stat, int32(value));
 

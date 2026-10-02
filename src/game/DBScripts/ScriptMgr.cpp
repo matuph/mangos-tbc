@@ -37,6 +37,9 @@
 #include "Entities/Transports.h"
 
 #include <string_view>
+#ifdef BUILD_ELUNA
+#include "LuaEngine/LuaEngine.h"
+#endif
 
 INSTANTIATE_SINGLETON_1(ScriptMgr);
 
@@ -864,7 +867,7 @@ void ScriptMgr::LoadScripts(ScriptMapType scriptType)
 //                         }
 //                         break;
 //                     }
-// 
+//
 //                     case 4: // remove buddy to formation
 //                     {
 //                         if (!tmp.buddyEntry)
@@ -950,7 +953,7 @@ void ScriptMgr::LoadScripts(ScriptMapType scriptType)
                 }
                 break;
             }
-            case SCRIPT_COMMAND_SPAWN_SPAWN_GROUP: 
+            case SCRIPT_COMMAND_SPAWN_SPAWN_GROUP:
             {
                 auto const& spgCont = sObjectMgr.GetSpawnGroupContainer()->spawnGroupMap;
                 if (spgCont.find(tmp.spawnGroupData.groupId) == spgCont.end())
@@ -1164,7 +1167,7 @@ void ScriptMgr::LoadStringIds(bool reload)
         m_stringIdsByString = std::make_shared<StringIdMapByString>();
         return;
     }
-    
+
     auto stringIdMap = std::make_shared<StringIdMap>();
     auto stringIdsByString = std::make_shared<StringIdMapByString>();
 
@@ -1183,7 +1186,7 @@ void ScriptMgr::LoadStringIds(bool reload)
         stringIdMap->emplace(stringId.Id, stringId);
         stringIdsByString->emplace(stringId.Name, stringId);
     }
-    while(result->NextRow());        
+    while(result->NextRow());
 
     m_stringIds = stringIdMap;
     m_stringIdsByString = stringIdsByString;
@@ -1602,7 +1605,7 @@ std::pair<bool, bool> ScriptAction::GetScriptProcessTargets(WorldObject* origina
                     Cell::VisitGridObjects(origin, searcher, m_script->searchRadiusOrGuid);
                     if (goBuddy)
                         buddies.push_back(goBuddy);
-                }                
+                }
             }
 
             if (buddies.empty() && m_script->command != SCRIPT_COMMAND_TERMINATE_SCRIPT)
@@ -3144,7 +3147,7 @@ bool ScriptAction::ExecuteDbscriptCommand(WorldObject* pSource, WorldObject* pTa
 //                 {
 //                     if (LogIfNotCreature(pSource))
 //                         return false;
-// 
+//
 //                     if (!leaderFormation)
 //                     {
 //                         sLog.outErrorDb(" DB-SCRIPTS: Process table `%s` id %u, command %u failed. %s is not in formation!",
@@ -3158,7 +3161,7 @@ bool ScriptAction::ExecuteDbscriptCommand(WorldObject* pSource, WorldObject* pTa
 //                 {
 //                     if (LogIfNotCreature(pSource))
 //                         return false;
-// 
+//
 //                     if (!leaderFormation)
 //                     {
 //                         sLog.outErrorDb(" DB-SCRIPTS: Process table `%s` id %u, command %u failed. %s is not in formation!",
@@ -3289,7 +3292,7 @@ bool ScriptAction::ExecuteDbscriptCommand(WorldObject* pSource, WorldObject* pTa
             pSource->SetStringId(m_script->stringId.stringId, m_script->stringId.apply);
             break;
         }
-        case SCRIPT_COMMAND_SPAWN_SPAWN_GROUP: 
+        case SCRIPT_COMMAND_SPAWN_SPAWN_GROUP:
         {
             uint32 time_to_despawn = m_script->spawnGroupData.despawnDelay;
             SpawnGroup* group = pSource->GetMap()->GetSpawnManager().GetSpawnGroup(m_script->spawnGroupData.groupId);

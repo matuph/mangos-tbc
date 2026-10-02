@@ -1,0 +1,11 @@
+{
+  "name": "eluna",
+  "version": "1.0.0",
+  "core": "cmangos-tbc",
+  "moduleSystem": "cmake-core-extension",
+  "buildFlag": "BUILD_MODULE_ELUNA",
+  "runtime": ["eluna", "lua"],
+  "requiresCoreHooks": true,
+  "engineRevision": "1b06f28ff3a00054d915d824c725fb4283fee74d",
+  "coreIntegrationRevision": "57b0aeb5b1b9a065e0dfe65853a9f36a7a01d0a8"
+}

@@ -219,6 +219,23 @@ namespace MaNGOS
     };
 
     template<class Check>
+    struct WorldObjectLastSearcher
+    {
+        WorldObject*& i_object;
+        Check& i_check;
+
+        WorldObjectLastSearcher(WorldObject*& result, Check& check) : i_object(result), i_check(check) {}
+
+        void Visit(PlayerMapType& m);
+        void Visit(CreatureMapType& m);
+        void Visit(CorpseMapType& m);
+        void Visit(GameObjectMapType& m);
+        void Visit(DynamicObjectMapType& m);
+
+        template<class NOT_INTERESTED> void Visit(GridRefManager<NOT_INTERESTED>&) {}
+    };
+
+    template<class Check>
     struct WorldObjectListSearcher
     {
         WorldObjectList& i_objects;
@@ -706,7 +723,7 @@ namespace MaNGOS
             // prevent clone this object
             AllGameObjectEntriesListInObjectRangeCheck(AllGameObjectEntriesListInObjectRangeCheck const&);
     };
-    
+
     // combine with above somehow? fuck
     class AllGameObjectsMatchingOneEntryInRange
     {
@@ -999,7 +1016,7 @@ namespace MaNGOS
                 // ignore totems
                 if (u->GetTypeId() == TYPEID_UNIT && ((Creature*)u)->IsTotem())
                     return false;
-                
+
                 return u->IsAlive() && i_obj->CanAttackSpell(u) && i_obj->IsWithinDistInMap(u, i_range) && i_obj->IsWithinLOSInMap(u);
             }
         private:
@@ -1024,7 +1041,7 @@ namespace MaNGOS
             float i_range;
             bool i_ignorePhase;
     };
-    
+
     class AnyFriendlyUnitInObjectRangeCheck
     {
         public:

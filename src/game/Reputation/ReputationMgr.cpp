@@ -21,6 +21,9 @@
 #include "Entities/Player.h"
 #include "Server/WorldPacket.h"
 #include "Globals/ObjectMgr.h"
+#ifdef BUILD_ELUNA
+#include "LuaEngine/LuaEngine.h"
+#endif
 
 #ifdef ENABLE_MODULES
 #include "ModuleMgr.h"
@@ -271,6 +274,11 @@ void ReputationMgr::Initialize()
 
 bool ReputationMgr::SetReputation(FactionEntry const* factionEntry, int32 standing, bool incremental, bool noSpillover)
 {
+#ifdef BUILD_ELUNA
+    // used by eluna
+    if (Eluna* e = m_player->GetEluna())
+        e->OnReputationChange(m_player, factionEntry->ID, standing, incremental);
+#endif
     if (!factionEntry)
         return false;
 

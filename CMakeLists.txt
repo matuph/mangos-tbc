@@ -114,6 +114,22 @@ endif()
 # set default buildoptions and print them
 include(cmake/options.cmake)
 
+# BUILD_ELUNA remains available for users of the upstream Eluna fork.
+if(BUILD_MODULE_ELUNA)
+  set(BUILD_ELUNA ON)
+endif()
+if(BUILD_ELUNA)
+  if(NOT BUILD_GAME_SERVER)
+    message(FATAL_ERROR "Eluna requires BUILD_GAME_SERVER=ON")
+  endif()
+  if(NOT EXISTS "${CMAKE_SOURCE_DIR}/src/game/LuaEngine/LuaEngine.h")
+    message(FATAL_ERROR "Eluna sources missing. Run git submodule update --init --recursive.")
+  endif()
+endif()
+if(BUILD_MODULES AND (BUILD_MODULE_PLAYERTREFF OR BUILD_MODULE_LEVEL58UPGRADE) AND NOT BUILD_ELUNA)
+  message(FATAL_ERROR "Playertreff/Level58Upgrade require BUILD_MODULE_ELUNA=ON")
+endif()
+
 # Force out-of-source build
 if(${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_BINARY_DIR})
   message(FATAL_ERROR
@@ -473,6 +489,11 @@ if(MSVC)
     set_property(DIRECTORY ${CMAKE_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT "RecastDemoMod")
   endif()
 endif()
+
+if(BUILD_ELUNA)
+  add_subdirectory(src/modules/eluna)
+endif()
+
 
 # if(SQL)
 #   add_subdirectory(sql)

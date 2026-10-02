@@ -1,3 +1,4 @@
+option(BUILD_MODULE_ELUNA "Build the Eluna runtime module" OFF)
 option(DEBUG                                "Include additional debug-code in core"     OFF)
 option(WARNINGS                             "Show all warnings during compile"          OFF)
 option(POSTGRESQL                           "Use PostgreSQL"                            OFF)
@@ -7,6 +8,7 @@ option(BUILD_LOGIN_SERVER                   "Build login server"                
 option(BUILD_EXTRACTORS                     "Build map/dbc/vmap/mmap extractors"        OFF)
 option(BUILD_SCRIPTDEV                      "Build ScriptDev. (OFF Speedup build)"      ON)
 option(BUILD_PLAYERBOTS                     "Build Playerbots mod"                      OFF)
+option(BUILD_ELUNA                          "Build Eluna Lua Engine"                    OFF)
 option(BUILD_AHBOT                          "Build Auction House Bot mod"               OFF)
 
 # Modules
@@ -45,6 +47,7 @@ message(STATUS
     BUILD_LOGIN_SERVER      Build login server (auth server)
     BUILD_EXTRACTORS        Build map/dbc/vmap/mmap extractor
 	BUILD_PLAYERBOTS        Build Playerbots mod
+    BUILD_ELUNA             Build Eluna Lua Engine
     BUILD_AHBOT             Build Auction House Bot mod
     BUILD_MODULES           Build module system
     BUILD_METRICS           Build Metrics, generate data for Grafana

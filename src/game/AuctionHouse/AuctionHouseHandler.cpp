@@ -28,6 +28,10 @@
 #include "Mails/Mail.h"
 #include "Util/Util.h"
 #include "Chat/Chat.h"
+#ifdef BUILD_ELUNA
+#include "LuaEngine/LuaEngine.h"
+#endif
+
 
 #ifdef ENABLE_MODULES
 #include "ModuleMgr.h"
@@ -330,6 +334,10 @@ void WorldSession::HandleAuctionSellItem(WorldPacket& recv_data)
 #ifdef ENABLE_MODULES
     sModuleMgr.OnSellItem(AH, GetPlayer());
 #endif
+#ifdef BUILD_ELUNA
+    if (Eluna* e = sWorld.GetEluna())
+        e->OnAdd(auctionHouse, AH);
+#endif
 }
 
 // this function is called when client bids or buys out auction
@@ -471,6 +479,10 @@ void WorldSession::HandleAuctionRemoveItem(WorldPacket& recv_data)
     pl->SaveInventoryAndGoldToDB();
     CharacterDatabase.CommitTransaction();
     sAuctionMgr.RemoveAItem(auction->itemGuidLow);
+#ifdef BUILD_ELUNA
+    if (Eluna* e = sWorld.GetEluna())
+        e->OnRemove(auctionHouse, auction);
+#endif
     auctionHouse->RemoveAuction(auction->Id);
     delete auction;
 }

@@ -8,7 +8,7 @@ function(capitalize_first_letter INPUT_STRING OUTPUT_VARIABLE)
 endfunction()
 
 # Get all active modules
-set(SKIP_FOLDERS "PlayerBots" "modules")
+set(SKIP_FOLDERS "PlayerBots" "modules" "eluna")
 set(MODULE_NAMES "")
 file(GLOB SUBDIRECTORIES LIST_DIRECTORIES true ${CMAKE_SOURCE_DIR}/src/modules/*)
 foreach(SUBDIR ${SUBDIRECTORIES})

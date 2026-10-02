@@ -225,6 +225,18 @@ ArenaTeam* ObjectMgr::GetArenaTeamByCaptain(ObjectGuid guid) const
     return nullptr;
 }
 
+void ObjectMgr::AddLocaleString(std::string const& s, LocaleConstant locale, StringVector& data)
+{
+    if (!s.empty())
+    {
+        if (data.size() <= size_t(locale))
+        {
+            data.resize(locale + 1);
+        }
+        data[locale] = s;
+    }
+}
+
 void ObjectMgr::LoadCreatureLocales()
 {
     mCreatureLocaleMap.clear();                             // need for reload case
@@ -2095,7 +2107,7 @@ void ObjectMgr::LoadCreatureSpawnDataTemplates()
         sLog.outString();
         return;
     }
-    
+
     BarGoLink bar(result->GetRowCount());
 
     uint32 count = 0;
@@ -4692,7 +4704,7 @@ void ObjectMgr::LoadQuests()
                           "RewHonorableKills, RewOrReqMoney, RewMoneyMaxLevel, RewSpell, RewSpellCast, RewMailTemplateId, RewMailDelaySecs, PointMapId, PointX, PointY, PointOpt,"
                           // 108          109            110            111            112                 113                 114                 115
                           "DetailsEmote1, DetailsEmote2, DetailsEmote3, DetailsEmote4, DetailsEmoteDelay1, DetailsEmoteDelay2, DetailsEmoteDelay3, DetailsEmoteDelay4,"
-                          // 116            117                   118            119                 120                121                122                123          
+                          // 116            117                   118            119                 120                121                122                123
                           "IncompleteEmote, IncompleteEmoteDelay, CompleteEmote, CompleteEmoteDelay, OfferRewardEmote1, OfferRewardEmote2, OfferRewardEmote3, OfferRewardEmote4,"
                           // 124                   125                     126                     127
                           "OfferRewardEmoteDelay1, OfferRewardEmoteDelay2, OfferRewardEmoteDelay3, OfferRewardEmoteDelay4,"
@@ -6070,7 +6082,7 @@ void ObjectMgr::LoadGossipText()
     sLog.outString();
 
     result = WorldDatabase.Query("SELECT Id,Prob0,Prob1,Prob2,Prob3,Prob4,Prob5,Prob6,Prob7,BroadcastTextId0,BroadcastTextId1,BroadcastTextId2,BroadcastTextId3,BroadcastTextId4,BroadcastTextId5,BroadcastTextId6,BroadcastTextId7 FROM npc_text_broadcast_text");
-    
+
     count = 0;
     if (!result)
     {
@@ -8898,6 +8910,49 @@ bool ObjectMgr::IsEncounter(uint32 creditEntry, uint32 mapId) const
             return true;
     }
     return false;
+}
+
+int ObjectMgr::GetIndexForLocale(LocaleConstant loc)
+{
+    if (loc == LOCALE_enUS)
+    {
+        return -1;
+    }
+
+    for (size_t i = 0; i < m_LocalForIndex.size(); ++i)
+        if (m_LocalForIndex[i] == loc)
+        {
+            return i;
+        }
+
+    return -1;
+}
+
+LocaleConstant ObjectMgr::GetLocaleForIndex(int i)
+{
+    if (i < 0 || i >= (int32)m_LocalForIndex.size())
+    {
+        return LOCALE_enUS;
+    }
+
+    return m_LocalForIndex[i];
+}
+
+int ObjectMgr::GetOrNewIndexForLocale(LocaleConstant loc)
+{
+    if (loc == LOCALE_enUS)
+    {
+        return -1;
+    }
+
+    for (size_t i = 0; i < m_LocalForIndex.size(); ++i)
+        if (m_LocalForIndex[i] == loc)
+        {
+            return i;
+        }
+
+    m_LocalForIndex.push_back(loc);
+    return m_LocalForIndex.size() - 1;
 }
 
 void ObjectMgr::LoadGameObjectForQuests()
