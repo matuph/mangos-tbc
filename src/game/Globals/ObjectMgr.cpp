@@ -9657,6 +9657,9 @@ void ObjectMgr::LoadTrainers(char const* tableName, bool isTemplates)
                 {
                     case TARGET_NONE:
                     case TARGET_UNIT_CASTER:
+                        // ...looks like the specified spell is actually a trainer's spell casted on a player to teach another spell
+                        // Trainer's spells can teach more than one spell (up to number of effects)
+                        // Self-casts listed in trainer's lists usually come from recipes which were made trainable in a later patch
                         trainerSpell.learnedSpell.push_back(spellinfo->EffectTriggerSpell[i]);
                         break;
                     default:

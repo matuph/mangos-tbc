@@ -8144,7 +8144,7 @@ bool SpellAuraHolder::IsNeedVisibleSlot(Unit const* caster) const
     return !m_isPassive || totemAura;
 }
 
-void SpellAuraHolder::HandleSpellSpecificBoosts(bool apply)
+void SpellAuraHolder::HandleSpellSpecificBoosts(bool apply, AuraRemoveMode mode)
 {
     std::vector<uint32> boostSpells;
 
@@ -8180,6 +8180,9 @@ void SpellAuraHolder::HandleSpellSpecificBoosts(bool apply)
             {
                 // Remove Blood Frenzy only if target no longer has any Deep Wound or Rend (applying is handled by procs)
                 if (GetSpellProto()->Mechanic != MECHANIC_BLEED)
+                    return;
+
+                if (mode == AURA_REMOVE_BY_STACK)
                     return;
 
                 // If target still has one of Warrior's bleeds, do nothing
