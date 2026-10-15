@@ -23,7 +23,7 @@ jobs:
 
     steps:
       - name: Checkout source
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Install compiler dependencies
         run: |
@@ -78,7 +78,7 @@ jobs:
             libicu-dev zlib1g-dev libbz2-dev libsqlite3-dev
 
       - name: Checkout source
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Configure CMaNGOS TBC
         run: |
